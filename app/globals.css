@@ -123,6 +123,47 @@
   --sidebar-accent-foreground: var(--gray-5);
   --sidebar-border: var(--gray-50);
   --sidebar-ring: var(--blue-25);
+  --wui-font-family: var(--font-gilroy), system-ui, sans-serif;
+  --wui-colors-accent-100: #0a0b0d;
+  --wui-colors-accent-090: #16181c;
+  --wui-colors-accent-080: #1f2227;
+  --wui-colors-fg-100: #ffffff;
+  --wui-colors-fg-200: #f5f5f5;
+  --wui-colors-bg-100: #ffffff;
+  --wui-colors-bg-125: #ededee;
+  --wui-shadows-button: none;
+  --wui-radii-buttons: 10px;
+  --apkt-fontFamily-regular: var(--font-gilroy), system-ui, sans-serif;
+  --apkt-fontFamily-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --apkt-fontWeight-regular: 400;
+  --apkt-fontWeight-medium: 600;
+  --apkt-colors-black: #0a0b0d;
+  --apkt-colors-white: #ffffff;
+  --apkt-colors-white010: rgba(255, 255, 255, 0.1);
+  --apkt-colors-accent010: rgba(10, 11, 13, 0.1);
+  --apkt-colors-accent020: rgba(10, 11, 13, 0.2);
+  --apkt-colors-accent030: rgba(10, 11, 13, 0.3);
+  --apkt-colors-accent040: rgba(10, 11, 13, 0.4);
+  --apkt-colors-accent050: rgba(10, 11, 13, 0.5);
+  --apkt-colors-accent060: rgba(10, 11, 13, 0.6);
+  --apkt-colors-accent070: rgba(10, 11, 13, 0.7);
+  --apkt-colors-accent080: rgba(10, 11, 13, 0.8);
+  --apkt-colors-accent090: rgba(10, 11, 13, 0.9);
+  --apkt-colors-accent100: #0a0b0d;
+  --apkt-tokens-core-backgroundAccentPrimary-base: #0a0b0d;
+  --apkt-tokens-core-textAccentPrimary: #0a0b0d;
+  --apkt-tokens-core-borderAccentPrimary: #0a0b0d;
+  --apkt-tokens-theme-backgroundPrimary-base: #ffffff;
+  --apkt-tokens-theme-backgroundPrimary: #ffffff;
+  --apkt-tokens-theme-textPrimary: #0a0b0d;
+  --apkt-tokens-theme-textSecondary: #393b40;
+  --apkt-tokens-theme-textTertiary: #aaacb2;
+  --apkt-tokens-theme-textInvert: #ffffff;
+  --apkt-tokens-theme-borderPrimary: #d0d0d0;
+  --apkt-tokens-theme-borderSecondary: #c8c9cc;
+  --apkt-tokens-theme-foregroundPrimary: #e3e4e5;
+  --apkt-tokens-theme-foregroundSecondary: #f5f5f5;
+  --apkt-tokens-theme-overlay: rgba(10, 11, 13, 0.08);
 }
 
 @layer base {

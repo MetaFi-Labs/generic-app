@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export interface NavbarLink {
@@ -138,22 +138,6 @@ export const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
       }
     }, [isDesktop]);
 
-    const handleSignIn = (event: React.MouseEvent<HTMLAnchorElement>) => {
-      if (!onSignInClick) {
-        return;
-      }
-      event.preventDefault();
-      onSignInClick();
-    };
-
-    const handleCta = (event: React.MouseEvent<HTMLAnchorElement>) => {
-      if (!onCtaClick) {
-        return;
-      }
-      event.preventDefault();
-      onCtaClick();
-    };
-
     return (
       <header
         ref={ref}
@@ -206,26 +190,7 @@ export const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
           )}
 
           <div className="flex items-center gap-3">
-            <Link
-              href={signInHref}
-              className={cn(
-                buttonVariants({ variant: "ghost", size: "sm" }),
-                "text-sm font-medium",
-              )}
-              onClick={handleSignIn}
-            >
-              {signInText}
-            </Link>
-            <Link
-              href={ctaHref}
-              className={cn(
-                buttonVariants({ size: "sm" }),
-                "text-sm font-medium",
-              )}
-              onClick={handleCta}
-            >
-              {ctaText}
-            </Link>
+            <appkit-button />
           </div>
         </div>
 

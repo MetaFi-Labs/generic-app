@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 
+import { headers } from "next/headers";
+
 import { Navbar } from "@/components/navigation/navbar";
+import ContextProvider from "@/context";
 import "./globals.css";
 
 const gilroy = localFont({
@@ -43,20 +46,25 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersObj = await headers();
+  const cookies = headersObj.get("cookie");
+
   return (
     <html lang="en">
       <body
         className={`${gilroy.variable} ${geistMono.variable} bg-background text-foreground antialiased`}
       >
-        <div className="flex min-h-screen flex-col">
-          <Navbar />
-          <main className="flex-1">{children}</main>
-        </div>
+        <ContextProvider cookies={cookies}>
+          <div className="flex min-h-screen flex-col">
+            <Navbar />
+            <main className="flex-1">{children}</main>
+          </div>
+        </ContextProvider>
       </body>
     </html>
   );
