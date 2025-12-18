@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { erc4626Abi, formatUnits, parseUnits } from "viem";
-import { arbitrum } from "viem/chains";
+import { mainnet } from "viem/chains";
 import { useReadContract } from "wagmi";
 
 import { type HexAddress, ZERO_ADDRESS } from "@/lib/types/address";
@@ -54,7 +54,7 @@ export function useErc4626Preview({
   const { data, ...rest } = useReadContract({
     address: vaultAddress ?? ZERO_ADDRESS,
     abi: erc4626Abi,
-    chainId: arbitrum.id,
+    chainId: mainnet.id,
     functionName,
     args,
     query: {

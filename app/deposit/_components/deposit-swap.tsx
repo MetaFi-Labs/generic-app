@@ -4,7 +4,7 @@ import { ArrowUpDown } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { erc20Abi, erc4626Abi } from "viem";
-import { arbitrum } from "viem/chains";
+import { mainnet } from "viem/chains";
 import {
   useAccount,
   useBalance,
@@ -51,7 +51,7 @@ const TokenIcon = ({ src, alt }: { src: string; alt: string }) => (
 
 export function DepositSwap() {
   const { address: accountAddress } = useAccount();
-  const publicClient = usePublicClient({ chainId: arbitrum.id });
+  const publicClient = usePublicClient({ chainId: mainnet.id });
   const { writeContractAsync } = useWriteContract();
   const [selectedTicker, setSelectedTicker] = useState<StablecoinTicker>(
     stablecoins[0]?.ticker ?? "USDC",
@@ -93,7 +93,7 @@ export function DepositSwap() {
   const stablecoinBalance = useBalance({
     address: accountAddress,
     token: selectedStablecoin?.tokenAddress,
-    chainId: arbitrum.id,
+    chainId: mainnet.id,
     watch: Boolean(accountAddress && selectedStablecoin?.tokenAddress),
     query: {
       enabled: Boolean(accountAddress && selectedStablecoin?.tokenAddress),
@@ -103,7 +103,7 @@ export function DepositSwap() {
   const gusdBalance = useBalance({
     address: accountAddress,
     token: gusdAddress,
-    chainId: arbitrum.id,
+    chainId: mainnet.id,
     watch: Boolean(accountAddress && gusdAddress),
     query: {
       enabled: Boolean(accountAddress && gusdAddress),
@@ -233,7 +233,7 @@ export function DepositSwap() {
         const approvalHash = await writeContractAsync({
           abi: erc20Abi,
           address: stablecoinAddress,
-          chainId: arbitrum.id,
+          chainId: mainnet.id,
           functionName: "approve",
           args: [depositorAddress, parsedAmount],
         });
@@ -245,7 +245,7 @@ export function DepositSwap() {
       const depositHash = await writeContractAsync({
         abi: depositorAbi,
         address: depositorAddress,
-        chainId: arbitrum.id,
+        chainId: mainnet.id,
         functionName: "deposit",
         args: [stablecoinAddress, gusdAddress, parsedAmount],
       });
@@ -288,7 +288,7 @@ export function DepositSwap() {
       const unwrapHash = await writeContractAsync({
         abi: whitelabeledUnitAbi,
         address: gusdAddress,
-        chainId: arbitrum.id,
+        chainId: mainnet.id,
         functionName: "unwrap",
         args: [accountAddress, accountAddress, parsedAmount],
       });
@@ -297,7 +297,7 @@ export function DepositSwap() {
       const redeemHash = await writeContractAsync({
         abi: erc4626Abi,
         address: vaultAddress,
-        chainId: arbitrum.id,
+        chainId: mainnet.id,
         functionName: "redeem",
         args: [parsedAmount, accountAddress, accountAddress],
       });

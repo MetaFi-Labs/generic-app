@@ -1,5 +1,5 @@
 import { erc20Abi } from "viem";
-import { arbitrum } from "viem/chains";
+import { mainnet } from "viem/chains";
 import { useReadContract } from "wagmi";
 
 import { type HexAddress, ZERO_ADDRESS } from "@/lib/types/address";
@@ -12,7 +12,7 @@ export function useErc20Decimals(address: Address) {
   const { data, ...rest } = useReadContract({
     address: targetAddress,
     abi: erc20Abi,
-    chainId: arbitrum.id,
+    chainId: mainnet.id,
     functionName: "decimals",
     query: {
       enabled: Boolean(address),
