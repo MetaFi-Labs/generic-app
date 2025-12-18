@@ -3,11 +3,13 @@ import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { cookieStorage, createStorage } from "@wagmi/core";
 
 // Get projectId from https://dashboard.reown.com
-export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
+const rawProjectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 
-if (!projectId) {
+if (!rawProjectId) {
   throw new Error("Project ID is not defined");
 }
+
+export const projectId = rawProjectId;
 
 export const networks = [mainnet];
 

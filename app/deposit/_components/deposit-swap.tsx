@@ -8,6 +8,7 @@ import { mainnet } from "viem/chains";
 import {
   useAccount,
   useBalance,
+  useBlockNumber,
   usePublicClient,
   useWriteContract,
 } from "wagmi";
@@ -38,6 +39,8 @@ const whitelabeledUnitAbi =
 
 type AssetType = "stablecoin" | "gusd";
 
+const ZERO_AMOUNT = BigInt(0);
+
 const TokenIcon = ({ src, alt }: { src: string; alt: string }) => (
   <Image
     src={src}
@@ -53,6 +56,13 @@ export function DepositSwap() {
   const { address: accountAddress } = useAccount();
   const publicClient = usePublicClient({ chainId: mainnet.id });
   const { writeContractAsync } = useWriteContract();
+  const { data: blockNumber } = useBlockNumber({
+    chainId: mainnet.id,
+    watch: Boolean(accountAddress),
+    query: {
+      enabled: Boolean(accountAddress),
+    },
+  });
   const [selectedTicker, setSelectedTicker] = useState<StablecoinTicker>(
     stablecoins[0]?.ticker ?? "USDC",
   );
@@ -94,7 +104,7 @@ export function DepositSwap() {
     address: accountAddress,
     token: selectedStablecoin?.tokenAddress,
     chainId: mainnet.id,
-    watch: Boolean(accountAddress && selectedStablecoin?.tokenAddress),
+    blockNumber,
     query: {
       enabled: Boolean(accountAddress && selectedStablecoin?.tokenAddress),
     },
@@ -104,7 +114,7 @@ export function DepositSwap() {
     address: accountAddress,
     token: gusdAddress,
     chainId: mainnet.id,
-    watch: Boolean(accountAddress && gusdAddress),
+    blockNumber,
     query: {
       enabled: Boolean(accountAddress && gusdAddress),
     },
@@ -183,7 +193,7 @@ export function DepositSwap() {
       }
     }
 
-    if (!parsedAmount || parsedAmount <= 0n) {
+    if (!parsedAmount || parsedAmount <= ZERO_AMOUNT) {
       return { label: "Enter amount", disabled: true };
     }
 
@@ -218,7 +228,7 @@ export function DepositSwap() {
       !stablecoinAddress ||
       !gusdAddress ||
       !parsedAmount ||
-      parsedAmount <= 0n ||
+      parsedAmount <= ZERO_AMOUNT ||
       !depositorAddress ||
       !publicClient
     ) {
@@ -275,7 +285,7 @@ export function DepositSwap() {
       !vaultAddress ||
       !gusdAddress ||
       !parsedAmount ||
-      parsedAmount <= 0n ||
+      parsedAmount <= ZERO_AMOUNT ||
       !publicClient
     ) {
       return;

@@ -16,6 +16,8 @@ type Params = {
   mode: Mode;
 };
 
+const ZERO_AMOUNT = BigInt(0);
+
 export function useErc4626Preview({
   amount,
   fromDecimals,
@@ -38,15 +40,18 @@ export function useErc4626Preview({
   }, [fromDecimals, sanitizedAmount]);
 
   const args = useMemo(() => {
-    if (!parsedAmount || parsedAmount <= 0n) {
-      return [0n] as const;
+    if (!parsedAmount || parsedAmount <= ZERO_AMOUNT) {
+      return [ZERO_AMOUNT] as const;
     }
 
     return [parsedAmount] as const;
   }, [parsedAmount]);
 
   const enabled = Boolean(
-    vaultAddress && toDecimals != null && parsedAmount && parsedAmount > 0n,
+    vaultAddress &&
+      toDecimals != null &&
+      parsedAmount &&
+      parsedAmount > ZERO_AMOUNT,
   );
 
   const functionName = mode === "deposit" ? "previewDeposit" : "previewRedeem";

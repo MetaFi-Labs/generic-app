@@ -3,8 +3,8 @@
 import { mainnet } from "@reown/appkit/networks";
 import { createAppKit } from "@reown/appkit/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type Config, cookieToInitialState, WagmiProvider } from "wagmi";
 import { type ReactNode, useEffect } from "react";
+import { type Config, cookieToInitialState, WagmiProvider } from "wagmi";
 
 import { projectId, wagmiAdapter } from "@/config/wagmi";
 

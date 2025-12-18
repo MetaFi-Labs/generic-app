@@ -28,7 +28,7 @@ export function useTokenAllowance({ token, owner, spender }: Params) {
   });
 
   return {
-    allowance: data ?? 0n,
+    allowance: data ?? BigInt(0),
     refetchAllowance: refetch,
     ...rest,
   };
