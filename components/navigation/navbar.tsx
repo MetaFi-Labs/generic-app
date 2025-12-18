@@ -26,11 +26,7 @@ export interface NavbarProps extends React.HTMLAttributes<HTMLElement> {
   onCtaClick?: () => void;
 }
 
-const defaultNavigationLinks: NavbarLink[] = [
-  { href: "/deposit", label: "Deposit" },
-  { href: "/account", label: "Account" },
-  { href: "/documentation", label: "Documentation" },
-];
+const defaultNavigationLinks: NavbarLink[] = [];
 
 export const Logo = () => (
   <Image
@@ -122,6 +118,8 @@ export const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
       });
     }, [navigationLinks, pathname]);
 
+    const hasNavigation = resolvedLinks.length > 0;
+
     React.useEffect(() => {
       const mediaQuery = window.matchMedia("(min-width: 768px)");
       const update = () => setIsDesktop(mediaQuery.matches);
@@ -149,7 +147,7 @@ export const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
       >
         <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            {!isDesktop && (
+            {!isDesktop && hasNavigation && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -167,7 +165,7 @@ export const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
             </Link>
           </div>
 
-          {isDesktop && (
+          {isDesktop && hasNavigation && (
             <nav
               aria-label="Primary navigation"
               className="flex items-center gap-1"
@@ -194,36 +192,38 @@ export const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
           </div>
         </div>
 
-        <nav
-          id="mobile-navigation"
-          aria-label="Mobile navigation"
-          className={cn(
-            "md:hidden",
-            "absolute inset-x-0 top-full border-b border-border bg-background/95 shadow-lg transition-all duration-200 ease-out",
-            mobileOpen
-              ? "pointer-events-auto translate-y-0 opacity-100"
-              : "pointer-events-none -translate-y-2 opacity-0",
-          )}
-        >
-          <ul className="flex flex-col gap-1 px-4 py-3">
-            {resolvedLinks.map((link) => (
-              <li key={link.label}>
-                <Link
-                  href={link.href}
-                  className={cn(
-                    "block rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                    link.active
-                      ? "bg-accent text-accent-foreground"
-                      : "text-foreground/75",
-                  )}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        {!isDesktop && hasNavigation && (
+          <nav
+            id="mobile-navigation"
+            aria-label="Mobile navigation"
+            className={cn(
+              "md:hidden",
+              "absolute inset-x-0 top-full border-b border-border bg-background/95 shadow-lg transition-all duration-200 ease-out",
+              mobileOpen
+                ? "pointer-events-auto translate-y-0 opacity-100"
+                : "pointer-events-none -translate-y-2 opacity-0",
+            )}
+          >
+            <ul className="flex flex-col gap-1 px-4 py-3">
+              {resolvedLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className={cn(
+                      "block rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                      link.active
+                        ? "bg-accent text-accent-foreground"
+                        : "text-foreground/75",
+                    )}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
       </header>
     );
   },

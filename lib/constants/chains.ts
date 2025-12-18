@@ -1,7 +1,7 @@
 export const CHAINS = {
-  ARBITRUM: "arbitrum",
+  MAINNET: "mainnet",
 } as const;
 
 export type ChainName = (typeof CHAINS)[keyof typeof CHAINS];
 
-export const DEFAULT_CHAIN: ChainName = CHAINS.ARBITRUM;
+export const DEFAULT_CHAIN: ChainName = CHAINS.MAINNET;

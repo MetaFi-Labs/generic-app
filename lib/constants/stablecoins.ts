@@ -2,7 +2,7 @@ import type { ChainName } from "./chains";
 
 type Address = `0x${string}`;
 
-export type StablecoinTicker = "USDC" | "USDT";
+export type StablecoinTicker = "USDC" | "USDT", "USDS";
 
 type StablecoinChainConfig = {
   tokenAddress: Address;
@@ -29,9 +29,9 @@ export const STABLECOIN_DEFINITIONS = {
     conversionValue: 1,
     iconUrl: "/tokens/usdc.svg",
     chains: {
-      arbitrum: {
-        tokenAddress: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-        depositVaultAddress: "0xef7d496E10e1E18FAECF38922f8D98c33F92E13a",
+      mainnet: {
+        tokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        depositVaultAddress: "0x4825eFF24F9B7b76EEAFA2ecc6A1D5dFCb3c1c3f",
       },
     },
   },
@@ -40,9 +40,20 @@ export const STABLECOIN_DEFINITIONS = {
     conversionValue: 1,
     iconUrl: "/tokens/usdt.svg",
     chains: {
-      arbitrum: {
-        tokenAddress: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-        depositVaultAddress: "0x65bB7b99D965f726170FA269A9Ca14A7355F7206",
+      mainnet: {
+        tokenAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+        depositVaultAddress: "0xB8280955aE7b5207AF4CDbdCd775135Bd38157fE",
+      },
+    },
+  },
+  USDS: {
+    ticker: "USDS",
+    conversionValue: 1,
+    iconUrl: "/tokens/usds.svg",
+    chains: {
+      mainnet: {
+        tokenAddress: "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+        depositVaultAddress: "0x6133dA4Cd25773Ebd38542a8aCEF8F94cA89892A",
       },
     },
   },
@@ -53,7 +64,7 @@ export const GUSD_DEFINITION = {
   conversionValue: 1,
   iconUrl: "/tokens/gusd.svg",
   chains: {
-    arbitrum: "0xd8495139625d5589e5CB5eD54284D05EA1aa7eFd",
+    mainnet: "0xd8495139625d5589e5CB5eD54284D05EA1aa7eFd",
   },
 } as const satisfies MultichainTokenDefinition<"GUSD">;
 

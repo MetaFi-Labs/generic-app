@@ -3,8 +3,12 @@
 import { arbitrum } from "@reown/appkit/networks";
 import { createAppKit } from "@reown/appkit/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
-import { type Config, cookieToInitialState, WagmiProvider } from "wagmi";
+import {
+  type Config,
+  cookieToInitialState,
+  WagmiProvider,
+} from "wagmi";
+import { type ReactNode, useEffect } from "react";
 
 import { projectId, wagmiAdapter } from "@/config/wagmi";
 
@@ -56,10 +60,6 @@ const init = () => {
   initialized = true;
 };
 
-if (typeof window !== "undefined") {
-  init();
-}
-
 type ContextProviderProps = {
   children: ReactNode;
   cookies: string | null;
@@ -69,6 +69,10 @@ export default function ContextProvider({
   children,
   cookies,
 }: ContextProviderProps) {
+  useEffect(() => {
+    init();
+  }, []);
+
   const initialState = cookieToInitialState(
     wagmiAdapter.wagmiConfig as Config,
     cookies,
