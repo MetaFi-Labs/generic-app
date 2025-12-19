@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowUpDown } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { erc20Abi, erc4626Abi } from "viem";
 import { mainnet } from "viem/chains";
@@ -26,6 +25,7 @@ import { getGenericDepositorAddress } from "@/lib/constants/contracts";
 import type { StablecoinTicker } from "@/lib/constants/stablecoins";
 import { gusd, stablecoins } from "@/lib/models/tokens";
 import type { HexAddress } from "@/lib/types/address";
+import { cn } from "@/lib/utils";
 import { useErc20Decimals } from "./hooks/useErc20Decimals";
 import { useErc4626Preview } from "./hooks/useErc4626Preview";
 import { useTokenAllowance } from "./hooks/useTokenAllowance";
@@ -38,18 +38,58 @@ const whitelabeledUnitAbi =
   whitelabeledUnitArtifact.abi as typeof whitelabeledUnitArtifact.abi;
 
 type AssetType = "stablecoin" | "gusd";
+type DepositRoute = "predeposit" | "mainnet";
+type HexBytes = `0x${string}`;
 
 const ZERO_AMOUNT = BigInt(0);
 
+const PREDEPOSIT_CHAIN_NICKNAME =
+  "0xa4fdc657c7ba2402ba336e88c4ae1c72169f7bc116987c8aefd50982676d9a17" as const satisfies HexBytes;
+
+const toBytes32 = (value: HexBytes) =>
+  `0x${value.slice(2).padStart(64, "0")}` as const;
+
 const TokenIcon = ({ src, alt }: { src: string; alt: string }) => (
-  <Image
+  // biome-ignore lint/performance/noImgElement: token icons use local static assets and are not LCP-critical
+  <img
     src={src}
     alt={alt}
     width={20}
     height={20}
     loading="lazy"
+    decoding="async"
     className="h-5 w-5 rounded-full"
   />
+);
+
+const Chip = ({
+  label,
+  selected,
+  onSelect,
+  name,
+}: {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+  name: string;
+}) => (
+  <label
+    className={cn(
+      "inline-flex cursor-pointer items-center rounded-full border px-3 py-1 text-xs font-semibold transition focus-visible-within:outline-none focus-visible-within:ring-2 focus-visible-within:ring-ring focus-visible-within:ring-offset-2 focus-visible-within:ring-offset-background",
+      selected
+        ? "border-primary/40 bg-primary/10 text-foreground"
+        : "border-border/60 bg-background/70 text-muted-foreground hover:bg-background/90 hover:text-foreground",
+    )}
+  >
+    <input
+      type="radio"
+      name={name}
+      checked={selected}
+      onChange={onSelect}
+      className="sr-only"
+    />
+    {label}
+  </label>
 );
 
 export function DepositSwap() {
@@ -67,6 +107,7 @@ export function DepositSwap() {
     stablecoins[0]?.ticker ?? "USDC",
   );
   const [isDepositFlow, setIsDepositFlow] = useState(true);
+  const [depositRoute, setDepositRoute] = useState<DepositRoute>("mainnet");
   const [fromAmount, setFromAmount] = useState("");
   const [txStep, setTxStep] = useState<"idle" | "approving" | "submitting">(
     "idle",
@@ -98,6 +139,8 @@ export function DepositSwap() {
   const { decimals: stablecoinDecimals } = useErc20Decimals(stablecoinAddress);
   const { decimals: gusdDecimals } = useErc20Decimals(gusdAddress);
 
+  const isPredepositDeposit = isDepositFlow && depositRoute === "predeposit";
+
   const depositorAddress = getGenericDepositorAddress();
 
   const stablecoinBalance = useBalance({
@@ -120,13 +163,23 @@ export function DepositSwap() {
     },
   });
 
-  const fromBalanceHook = isDepositFlow ? stablecoinBalance : gusdBalance;
-  const toBalanceHook = isDepositFlow ? gusdBalance : stablecoinBalance;
+  const fromAssetType: AssetType = isDepositFlow
+    ? isPredepositDeposit
+      ? "gusd"
+      : "stablecoin"
+    : "gusd";
+
+  const toAssetType: AssetType = isDepositFlow ? "gusd" : "stablecoin";
+
+  const fromBalanceHook =
+    fromAssetType === "stablecoin" ? stablecoinBalance : gusdBalance;
+  const toBalanceHook =
+    toAssetType === "stablecoin" ? stablecoinBalance : gusdBalance;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset amount when the active asset changes
   useEffect(() => {
     setFromAmount("");
-  }, [selectedTicker, isDepositFlow]);
+  }, [selectedTicker, isDepositFlow, depositRoute]);
 
   const fromBalanceText = formatBalanceText(fromBalanceHook, accountAddress);
   const toBalanceText = formatBalanceText(toBalanceHook, accountAddress);
@@ -140,22 +193,30 @@ export function DepositSwap() {
     }
   };
 
-  const fromDecimals = isDepositFlow ? stablecoinDecimals : gusdDecimals;
-  const toDecimals = isDepositFlow ? gusdDecimals : stablecoinDecimals;
+  const fromDecimals =
+    fromAssetType === "stablecoin" ? stablecoinDecimals : gusdDecimals;
+  const toDecimals =
+    toAssetType === "stablecoin" ? stablecoinDecimals : gusdDecimals;
 
-  const { quote: estimatedToAmount, parsedAmount } = useErc4626Preview({
+  const { quote: previewToAmount, parsedAmount } = useErc4626Preview({
     amount: fromAmount,
     fromDecimals,
     toDecimals,
-    vaultAddress,
+    vaultAddress: isPredepositDeposit ? undefined : vaultAddress,
     mode: isDepositFlow ? "deposit" : "redeem",
   });
+
+  const estimatedToAmount = isPredepositDeposit ? fromAmount : previewToAmount;
+
+  const depositTokenAddress = isPredepositDeposit
+    ? gusdAddress
+    : stablecoinAddress;
 
   const {
     allowance: depositAllowance,
     refetchAllowance: refetchDepositAllowance,
   } = useTokenAllowance({
-    token: stablecoinAddress,
+    token: isDepositFlow ? depositTokenAddress : undefined,
     owner: accountAddress,
     spender: depositorAddress,
   });
@@ -169,19 +230,33 @@ export function DepositSwap() {
   }, [depositAllowance, isDepositFlow, parsedAmount]);
 
   const buttonState = useMemo(() => {
-    const actionLabel = isDepositFlow ? "Deposit" : "Redeem";
+    const actionLabel = isDepositFlow
+      ? isPredepositDeposit
+        ? "Predeposit"
+        : "Deposit"
+      : "Redeem";
 
     if (!accountAddress) {
       return { label: "Connect wallet", disabled: true };
     }
 
     if (isDepositFlow) {
-      if (!stablecoinAddress) {
-        return { label: "Select asset", disabled: true };
-      }
-
       if (!depositorAddress) {
         return { label: "Depositor unavailable", disabled: true };
+      }
+
+      if (isPredepositDeposit) {
+        if (!gusdAddress) {
+          return { label: "GUSD unavailable", disabled: true };
+        }
+      } else {
+        if (!stablecoinAddress) {
+          return { label: "Select asset", disabled: true };
+        }
+
+        if (!gusdAddress) {
+          return { label: "GUSD unavailable", disabled: true };
+        }
       }
     } else {
       if (!gusdAddress) {
@@ -214,6 +289,7 @@ export function DepositSwap() {
     accountAddress,
     depositorAddress,
     gusdAddress,
+    isPredepositDeposit,
     isDepositFlow,
     needsApproval,
     parsedAmount,
@@ -225,8 +301,6 @@ export function DepositSwap() {
   const handleDeposit = async () => {
     if (
       !accountAddress ||
-      !stablecoinAddress ||
-      !gusdAddress ||
       !parsedAmount ||
       parsedAmount <= ZERO_AMOUNT ||
       !depositorAddress ||
@@ -239,10 +313,17 @@ export function DepositSwap() {
 
     try {
       if (depositAllowance < parsedAmount) {
+        const approvalToken = isPredepositDeposit
+          ? gusdAddress
+          : stablecoinAddress;
+        if (!approvalToken) {
+          return;
+        }
+
         setTxStep("approving");
         const approvalHash = await writeContractAsync({
           abi: erc20Abi,
-          address: stablecoinAddress,
+          address: approvalToken,
           chainId: mainnet.id,
           functionName: "approve",
           args: [depositorAddress, parsedAmount],
@@ -252,13 +333,37 @@ export function DepositSwap() {
       }
 
       setTxStep("submitting");
-      const depositHash = await writeContractAsync({
-        abi: depositorAbi,
-        address: depositorAddress,
-        chainId: mainnet.id,
-        functionName: "deposit",
-        args: [stablecoinAddress, gusdAddress, parsedAmount],
-      });
+      let depositHash: HexBytes;
+      if (isPredepositDeposit) {
+        if (!gusdAddress) {
+          return;
+        }
+        const remoteRecipient = toBytes32(accountAddress);
+
+        depositHash = await writeContractAsync({
+          abi: depositorAbi,
+          address: depositorAddress,
+          chainId: mainnet.id,
+          functionName: "depositAndPredeposit",
+          args: [
+            gusdAddress,
+            parsedAmount,
+            PREDEPOSIT_CHAIN_NICKNAME,
+            remoteRecipient,
+          ],
+        });
+      } else {
+        if (!stablecoinAddress || !gusdAddress) {
+          return;
+        }
+        depositHash = await writeContractAsync({
+          abi: depositorAbi,
+          address: depositorAddress,
+          chainId: mainnet.id,
+          functionName: "deposit",
+          args: [stablecoinAddress, gusdAddress, parsedAmount],
+        });
+      }
       await publicClient.waitForTransactionReceipt({ hash: depositHash });
 
       setFromAmount("");
@@ -392,11 +497,17 @@ export function DepositSwap() {
             <SwapAssetPanel
               label="From"
               selector={renderAssetSelector(
-                isDepositFlow ? "stablecoin" : "gusd",
+                isDepositFlow
+                  ? depositRoute === "predeposit"
+                    ? "gusd"
+                    : "stablecoin"
+                  : "gusd",
               )}
               inputProps={{
                 placeholder: isDepositFlow
-                  ? `Amount in ${selectedStablecoin?.ticker ?? ""}`
+                  ? depositRoute === "predeposit"
+                    ? "Amount in GUSD"
+                    : `Amount in ${selectedStablecoin?.ticker ?? ""}`
                   : "Amount in GUSD",
                 autoComplete: "off",
                 value: fromAmount,
@@ -434,6 +545,23 @@ export function DepositSwap() {
               }}
             />
           </div>
+          {isDepositFlow ? (
+            <fieldset className="flex flex-wrap items-center gap-2">
+              <legend className="sr-only">Deposit route</legend>
+              <Chip
+                label="Predeposit"
+                selected={depositRoute === "predeposit"}
+                name="deposit-route"
+                onSelect={() => setDepositRoute("predeposit")}
+              />
+              <Chip
+                label="Mainnet"
+                selected={depositRoute === "mainnet"}
+                name="deposit-route"
+                onSelect={() => setDepositRoute("mainnet")}
+              />
+            </fieldset>
+          ) : null}
           <button
             type="button"
             onClick={handlePrimaryAction}

@@ -58,6 +58,7 @@ const createStablecoin = (ticker: StablecoinTicker): Stablecoin => {
 export const stablecoins = [
   createStablecoin("USDC"),
   createStablecoin("USDT"),
+  createStablecoin("USDS"),
 ] as const;
 
 export const gusd = new MultichainToken(

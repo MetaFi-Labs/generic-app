@@ -49,7 +49,7 @@ export const STABLECOIN_DEFINITIONS = {
   USDS: {
     ticker: "USDS",
     conversionValue: 1,
-    iconUrl: "/tokens/usds.svg",
+    iconUrl: "/tokens/usds.png",
     chains: {
       mainnet: {
         tokenAddress: "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
