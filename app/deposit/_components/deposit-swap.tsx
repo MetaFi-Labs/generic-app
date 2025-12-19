@@ -21,7 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getGenericDepositorAddress } from "@/lib/constants/contracts";
+import {
+  getGenericDepositorAddress,
+  getGenericUnitTokenAddress,
+} from "@/lib/constants/contracts";
 import type { StablecoinTicker } from "@/lib/constants/stablecoins";
 import { gusd, stablecoins } from "@/lib/models/tokens";
 import type { HexAddress } from "@/lib/types/address";
@@ -142,6 +145,7 @@ export function DepositSwap() {
   const isPredepositDeposit = isDepositFlow && depositRoute === "predeposit";
 
   const depositorAddress = getGenericDepositorAddress();
+  const genericUnitTokenAddress = getGenericUnitTokenAddress();
 
   const stablecoinBalance = useBalance({
     address: accountAddress,
@@ -221,13 +225,34 @@ export function DepositSwap() {
     spender: depositorAddress,
   });
 
-  const needsApproval = useMemo(() => {
+  const {
+    allowance: redeemAllowance,
+    refetchAllowance: refetchRedeemAllowance,
+  } = useTokenAllowance({
+    token: !isDepositFlow ? genericUnitTokenAddress : undefined,
+    owner: accountAddress,
+    spender: !isDepositFlow ? vaultAddress : undefined,
+  });
+
+  const needsDepositApproval = useMemo(() => {
     if (!parsedAmount || !isDepositFlow) {
       return false;
     }
 
     return depositAllowance < parsedAmount;
   }, [depositAllowance, isDepositFlow, parsedAmount]);
+
+  const needsRedeemApproval = useMemo(() => {
+    if (!parsedAmount || isDepositFlow) {
+      return false;
+    }
+
+    return redeemAllowance < parsedAmount;
+  }, [isDepositFlow, parsedAmount, redeemAllowance]);
+
+  const needsApproval = isDepositFlow
+    ? needsDepositApproval
+    : needsRedeemApproval;
 
   const buttonState = useMemo(() => {
     const actionLabel = isDepositFlow
@@ -263,6 +288,10 @@ export function DepositSwap() {
         return { label: "GUSD unavailable", disabled: true };
       }
 
+      if (!genericUnitTokenAddress) {
+        return { label: "Generic unit unavailable", disabled: true };
+      }
+
       if (!vaultAddress) {
         return { label: "Vault unavailable", disabled: true };
       }
@@ -289,6 +318,7 @@ export function DepositSwap() {
     accountAddress,
     depositorAddress,
     gusdAddress,
+    genericUnitTokenAddress,
     isPredepositDeposit,
     isDepositFlow,
     needsApproval,
@@ -389,6 +419,7 @@ export function DepositSwap() {
       !accountAddress ||
       !vaultAddress ||
       !gusdAddress ||
+      !genericUnitTokenAddress ||
       !parsedAmount ||
       parsedAmount <= ZERO_AMOUNT ||
       !publicClient
@@ -399,7 +430,20 @@ export function DepositSwap() {
     setTxError(null);
 
     try {
+      const balanceBefore = await publicClient.readContract({
+        abi: erc20Abi,
+        address: genericUnitTokenAddress,
+        functionName: "balanceOf",
+        args: [accountAddress],
+      });
+
       setTxStep("submitting");
+      console.info("Unwrap call", {
+        functionName: "unwrap",
+        address: gusdAddress,
+        chainId: mainnet.id,
+        args: [accountAddress, accountAddress, parsedAmount],
+      });
       const unwrapHash = await writeContractAsync({
         abi: whitelabeledUnitAbi,
         address: gusdAddress,
@@ -409,12 +453,63 @@ export function DepositSwap() {
       });
       await publicClient.waitForTransactionReceipt({ hash: unwrapHash });
 
+      const balanceAfter = await publicClient.readContract({
+        abi: erc20Abi,
+        address: genericUnitTokenAddress,
+        functionName: "balanceOf",
+        args: [accountAddress],
+      });
+      const redeemShares = balanceAfter - balanceBefore;
+      console.info("Generic unit balance", {
+        before: balanceBefore,
+        after: balanceAfter,
+        delta: redeemShares,
+      });
+
+      if (redeemShares <= ZERO_AMOUNT) {
+        setTxError("No generic unit tokens available to redeem");
+        return;
+      }
+
+      const currentAllowance = await publicClient.readContract({
+        abi: erc20Abi,
+        address: genericUnitTokenAddress,
+        functionName: "allowance",
+        args: [accountAddress, vaultAddress],
+      });
+
+      if (currentAllowance < redeemShares) {
+        setTxStep("approving");
+        console.info("Redeem approval call", {
+          functionName: "approve",
+          address: genericUnitTokenAddress,
+          chainId: mainnet.id,
+          args: [vaultAddress, redeemShares],
+        });
+        const approvalHash = await writeContractAsync({
+          abi: erc20Abi,
+          address: genericUnitTokenAddress,
+          chainId: mainnet.id,
+          functionName: "approve",
+          args: [vaultAddress, redeemShares],
+        });
+        await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+        await refetchRedeemAllowance?.();
+      }
+
+      setTxStep("submitting");
+      console.info("Redeem call", {
+        functionName: "redeem",
+        address: vaultAddress,
+        chainId: mainnet.id,
+        args: [redeemShares, accountAddress, accountAddress],
+      });
       const redeemHash = await writeContractAsync({
         abi: erc4626Abi,
         address: vaultAddress,
         chainId: mainnet.id,
         functionName: "redeem",
-        args: [parsedAmount, accountAddress, accountAddress],
+        args: [redeemShares, accountAddress, accountAddress],
       });
       await publicClient.waitForTransactionReceipt({ hash: redeemHash });
 
