@@ -101,6 +101,7 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
   });
 
   const predepositEnabled = Boolean(accountAddress);
+  const predepositSender = accountAddress ?? ZERO_ADDRESS;
   const predepositRecipient = accountAddress
     ? toBytes32(accountAddress)
     : toBytes32(ZERO_ADDRESS);
@@ -114,9 +115,7 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
     abi: bridgeCoordinatorAbi,
     chainId: mainnet.id,
     functionName: "getPredeposit",
-    args: predepositEnabled
-      ? ([PREDEPOSIT_CHAIN_NICKNAME, accountAddress, predepositRecipient] as const)
-      : ([PREDEPOSIT_CHAIN_NICKNAME, ZERO_ADDRESS, predepositRecipient] as const),
+    args: [PREDEPOSIT_CHAIN_NICKNAME, predepositSender, predepositRecipient] as const,
     query: {
       enabled: predepositEnabled,
     },
