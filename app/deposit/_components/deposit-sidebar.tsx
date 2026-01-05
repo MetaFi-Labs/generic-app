@@ -187,9 +187,10 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
     unitBalance.data?.symbol,
   ]);
 
-  const hasUnits = (unitBalance.data?.value ?? 0n) > 0n;
-  const hasGusd = (gusdBalance.data?.value ?? 0n) > 0n;
-  const hasPredeposit = (predepositAmount ?? 0n) > 0n;
+  const zeroBigInt = BigInt(0);
+  const hasUnits = (unitBalance.data?.value ?? zeroBigInt) > zeroBigInt;
+  const hasGusd = (gusdBalance.data?.value ?? zeroBigInt) > zeroBigInt;
+  const hasPredeposit = (predepositAmount ?? zeroBigInt) > zeroBigInt;
   const positionsCount = accountAddress
     ? [hasUnits, hasGusd, hasPredeposit].filter(Boolean).length
     : 0;
