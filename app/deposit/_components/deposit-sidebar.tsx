@@ -9,9 +9,13 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
-import { mainnet } from "viem/chains";
-import { useAccount, useBalance, useReadContract } from "wagmi";
+import { useAccount, useBalance, useChainId, useReadContract } from "wagmi";
 
+import {
+  CHAIN_ID_BY_NAME,
+  CHAINS,
+  getChainNameById,
+} from "@/lib/constants/chains";
 import { getGenericUnitTokenAddress } from "@/lib/constants/contracts";
 import {
   BRIDGE_COORDINATOR_L1_ADDRESS,
@@ -78,14 +82,17 @@ const formatTokenBalance = (balance: BalanceLike, accountAddress?: string) => {
 export function DepositSidebar({ className }: DepositSidebarProps = {}) {
   const [open, setOpen] = useState(false);
   const { address: accountAddress } = useAccount();
-  const genericUnitTokenAddress = getGenericUnitTokenAddress();
-  const gusdAddress = gusd.getAddress();
+  const chainId = useChainId();
+  const chainName = getChainNameById(chainId);
+  const genericUnitTokenAddress = getGenericUnitTokenAddress(chainName);
+  const gusdAddress = gusd.getAddress(chainName);
   const { decimals: unitDecimals } = useErc20Decimals(genericUnitTokenAddress);
+  const mainnetChainId = CHAIN_ID_BY_NAME[CHAINS.MAINNET];
 
   const unitBalance = useBalance({
     address: accountAddress,
     token: genericUnitTokenAddress,
-    chainId: mainnet.id,
+    chainId,
     query: {
       enabled: Boolean(accountAddress && genericUnitTokenAddress),
     },
@@ -94,7 +101,7 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
   const gusdBalance = useBalance({
     address: accountAddress,
     token: gusdAddress,
-    chainId: mainnet.id,
+    chainId,
     query: {
       enabled: Boolean(accountAddress && gusdAddress),
     },
@@ -113,7 +120,7 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
   } = useReadContract({
     address: BRIDGE_COORDINATOR_L1_ADDRESS,
     abi: bridgeCoordinatorAbi,
-    chainId: mainnet.id,
+    chainId: mainnetChainId,
     functionName: "getPredeposit",
     args: [
       PREDEPOSIT_CHAIN_NICKNAME,
@@ -132,11 +139,11 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
 
     console.info("Predeposit read", {
       address: BRIDGE_COORDINATOR_L1_ADDRESS,
-      chainId: mainnet.id,
+      chainId: mainnetChainId,
       args: [PREDEPOSIT_CHAIN_NICKNAME, accountAddress, predepositRecipient],
       enabled: predepositEnabled,
     });
-  }, [accountAddress, predepositEnabled, predepositRecipient]);
+  }, [accountAddress, mainnetChainId, predepositEnabled, predepositRecipient]);
 
   useEffect(() => {
     if (!predepositError) {

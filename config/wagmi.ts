@@ -1,4 +1,4 @@
-import { mainnet } from "@reown/appkit/networks";
+import { mainnet, sepolia } from "@reown/appkit/networks";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { cookieStorage, createStorage } from "@wagmi/core";
 
@@ -11,7 +11,10 @@ if (!rawProjectId) {
 
 export const projectId = rawProjectId;
 
-export const networks = [mainnet];
+const enableSepolia = process.env.NEXT_PUBLIC_ENABLE_SEPOLIA === "true";
+
+export const networks = enableSepolia ? [mainnet, sepolia] : [mainnet];
+export const defaultNetwork = mainnet;
 
 // Set up the Wagmi Adapter (Config)
 export const wagmiAdapter = new WagmiAdapter({

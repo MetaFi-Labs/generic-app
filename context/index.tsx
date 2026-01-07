@@ -1,12 +1,16 @@
 "use client";
 
-import { mainnet } from "@reown/appkit/networks";
 import { createAppKit } from "@reown/appkit/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useEffect } from "react";
 import { type Config, cookieToInitialState, WagmiProvider } from "wagmi";
 
-import { projectId, wagmiAdapter } from "@/config/wagmi";
+import {
+  defaultNetwork,
+  networks,
+  projectId,
+  wagmiAdapter,
+} from "@/config/wagmi";
 
 const queryClient = new QueryClient();
 const overrides: Record<string, string> = {
@@ -34,8 +38,8 @@ const init = () => {
   createAppKit({
     adapters: [wagmiAdapter],
     projectId,
-    networks: [mainnet],
-    defaultNetwork: mainnet,
+    networks,
+    defaultNetwork,
     metadata: {
       name: "Generic Money",
       description: "Generic Money dApp",

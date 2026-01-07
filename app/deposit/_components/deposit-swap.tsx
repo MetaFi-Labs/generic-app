@@ -3,11 +3,11 @@
 import { ArrowUpDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { erc20Abi, erc4626Abi } from "viem";
-import { mainnet } from "viem/chains";
 import {
   useAccount,
   useBalance,
   useBlockNumber,
+  useChainId,
   usePublicClient,
   useWriteContract,
 } from "wagmi";
@@ -22,13 +22,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { pushAlert } from "@/lib/alerts";
+import { getChainNameById } from "@/lib/constants/chains";
 import {
   getGenericDepositorAddress,
   getGenericUnitTokenAddress,
 } from "@/lib/constants/contracts";
 import { PREDEPOSIT_CHAIN_NICKNAME } from "@/lib/constants/predeposit";
 import type { StablecoinTicker } from "@/lib/constants/stablecoins";
-import { gusd, stablecoins } from "@/lib/models/tokens";
+import { getStablecoins, gusd } from "@/lib/models/tokens";
 import type { HexAddress } from "@/lib/types/address";
 import { cn } from "@/lib/utils";
 import { useErc20Decimals } from "./hooks/useErc20Decimals";
@@ -114,18 +115,20 @@ const Chip = ({
 
 export function DepositSwap() {
   const { address: accountAddress } = useAccount();
-  const publicClient = usePublicClient({ chainId: mainnet.id });
+  const activeChainId = useChainId();
+  const chainName = getChainNameById(activeChainId);
+  const stablecoins = useMemo(() => getStablecoins(chainName), [chainName]);
+  const publicClient = usePublicClient({ chainId: activeChainId });
   const { writeContractAsync } = useWriteContract();
   const { data: blockNumber } = useBlockNumber({
-    chainId: mainnet.id,
+    chainId: activeChainId,
     watch: Boolean(accountAddress),
     query: {
       enabled: Boolean(accountAddress),
     },
   });
-  const [selectedTicker, setSelectedTicker] = useState<StablecoinTicker>(
-    stablecoins[0]?.ticker ?? "USDC",
-  );
+  const [selectedTicker, setSelectedTicker] =
+    useState<StablecoinTicker>("USDC");
   const [isDepositFlow, setIsDepositFlow] = useState(true);
   const [depositRoute, setDepositRoute] = useState<DepositRoute>("mainnet");
   const [fromAmount, setFromAmount] = useState("");
@@ -134,11 +137,17 @@ export function DepositSwap() {
   );
   const [txError, setTxError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!stablecoins.find((coin) => coin.ticker === selectedTicker)) {
+      setSelectedTicker(stablecoins[0]?.ticker ?? "USDC");
+    }
+  }, [selectedTicker, stablecoins]);
+
   const selectedStablecoin = useMemo(
     () =>
       stablecoins.find((coin) => coin.ticker === selectedTicker) ??
       stablecoins[0],
-    [selectedTicker],
+    [selectedTicker, stablecoins],
   );
 
   const handleSwitchDirection = () => {
@@ -149,7 +158,7 @@ export function DepositSwap() {
     setSelectedTicker(value);
   };
 
-  const gusdAddress = gusd.getAddress();
+  const gusdAddress = gusd.getAddress(chainName);
 
   const stablecoinAddress = selectedStablecoin?.tokenAddress;
   const vaultAddress = selectedStablecoin?.depositVaultAddress as
@@ -161,13 +170,13 @@ export function DepositSwap() {
 
   const isPredepositDeposit = isDepositFlow && depositRoute === "predeposit";
 
-  const depositorAddress = getGenericDepositorAddress();
-  const genericUnitTokenAddress = getGenericUnitTokenAddress();
+  const depositorAddress = getGenericDepositorAddress(chainName);
+  const genericUnitTokenAddress = getGenericUnitTokenAddress(chainName);
 
   const stablecoinBalance = useBalance({
     address: accountAddress,
     token: selectedStablecoin?.tokenAddress,
-    chainId: mainnet.id,
+    chainId: activeChainId,
     blockNumber,
     query: {
       enabled: Boolean(accountAddress && selectedStablecoin?.tokenAddress),
@@ -177,7 +186,7 @@ export function DepositSwap() {
   const gusdBalance = useBalance({
     address: accountAddress,
     token: gusdAddress,
-    chainId: mainnet.id,
+    chainId: activeChainId,
     blockNumber,
     query: {
       enabled: Boolean(accountAddress && gusdAddress),
@@ -196,7 +205,7 @@ export function DepositSwap() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset amount when the active asset changes
   useEffect(() => {
     setFromAmount("");
-  }, [selectedTicker, isDepositFlow, depositRoute]);
+  }, [selectedTicker, isDepositFlow, depositRoute, chainName]);
 
   const fromBalanceText = formatBalanceText(fromBalanceHook, accountAddress);
   const toBalanceText = formatBalanceText(toBalanceHook, accountAddress);
@@ -363,14 +372,14 @@ export function DepositSwap() {
         console.info("Deposit approval call", {
           functionName: "approve",
           address: approvalToken,
-          chainId: mainnet.id,
+          chainId: activeChainId,
           args: [depositorAddress, parsedAmount],
           route: isPredepositDeposit ? "predeposit" : "mainnet",
         });
         const approvalHash = await writeContractAsync({
           abi: erc20Abi,
           address: approvalToken,
-          chainId: mainnet.id,
+          chainId: activeChainId,
           functionName: "approve",
           args: [depositorAddress, parsedAmount],
         });
@@ -391,7 +400,7 @@ export function DepositSwap() {
         console.info("Predeposit call", {
           functionName: "depositAndPredeposit",
           address: depositorAddress,
-          chainId: mainnet.id,
+          chainId: activeChainId,
           assets: parsedAmount,
           args: [
             stablecoinAddress,
@@ -403,7 +412,7 @@ export function DepositSwap() {
         depositHash = await writeContractAsync({
           abi: depositorAbi,
           address: depositorAddress,
-          chainId: mainnet.id,
+          chainId: activeChainId,
           functionName: "depositAndPredeposit",
           args: [
             stablecoinAddress,
@@ -419,13 +428,13 @@ export function DepositSwap() {
         console.info("Deposit call", {
           functionName: "deposit",
           address: depositorAddress,
-          chainId: mainnet.id,
+          chainId: activeChainId,
           args: [stablecoinAddress, gusdAddress, parsedAmount],
         });
         depositHash = await writeContractAsync({
           abi: depositorAbi,
           address: depositorAddress,
-          chainId: mainnet.id,
+          chainId: activeChainId,
           functionName: "deposit",
           args: [stablecoinAddress, gusdAddress, parsedAmount],
         });
@@ -492,13 +501,13 @@ export function DepositSwap() {
       console.info("Unwrap call", {
         functionName: "unwrap",
         address: gusdAddress,
-        chainId: mainnet.id,
+        chainId: activeChainId,
         args: [accountAddress, accountAddress, parsedAmount],
       });
       const unwrapHash = await writeContractAsync({
         abi: whitelabeledUnitAbi,
         address: gusdAddress,
-        chainId: mainnet.id,
+        chainId: activeChainId,
         functionName: "unwrap",
         args: [accountAddress, accountAddress, parsedAmount],
       });
@@ -541,13 +550,13 @@ export function DepositSwap() {
         console.info("Redeem approval call", {
           functionName: "approve",
           address: genericUnitTokenAddress,
-          chainId: mainnet.id,
+          chainId: activeChainId,
           args: [vaultAddress, redeemShares],
         });
         const approvalHash = await writeContractAsync({
           abi: erc20Abi,
           address: genericUnitTokenAddress,
-          chainId: mainnet.id,
+          chainId: activeChainId,
           functionName: "approve",
           args: [vaultAddress, redeemShares],
         });
@@ -561,13 +570,13 @@ export function DepositSwap() {
       console.info("Redeem call", {
         functionName: "redeem",
         address: vaultAddress,
-        chainId: mainnet.id,
+        chainId: activeChainId,
         args: [redeemShares, accountAddress, accountAddress],
       });
       const redeemHash = await writeContractAsync({
         abi: erc4626Abi,
         address: vaultAddress,
-        chainId: mainnet.id,
+        chainId: activeChainId,
         functionName: "redeem",
         args: [redeemShares, accountAddress, accountAddress],
       });
