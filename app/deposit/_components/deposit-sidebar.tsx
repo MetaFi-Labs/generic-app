@@ -4,13 +4,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Droplet,
-  Layers,
+  Lock,
   Sparkles,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { useAccount, useBalance, useChainId, useReadContract } from "wagmi";
-
+import { useOpportunityRoute } from "@/context";
 import { CHAIN_ID_BY_NAME, getChainNameById } from "@/lib/constants/chains";
 import { getGenericUnitTokenAddress } from "@/lib/constants/contracts";
 import {
@@ -54,6 +54,7 @@ type BalanceLike = {
 };
 
 const POSITION_PRECISION = 4;
+const USD_PRECISION = 2;
 
 const formatTokenBalance = (balance: BalanceLike, accountAddress?: string) => {
   if (!accountAddress) {
@@ -77,7 +78,7 @@ const formatTokenBalance = (balance: BalanceLike, accountAddress?: string) => {
   return `${formatTokenAmount(formatted, POSITION_PRECISION)} ${symbol}`.trim();
 };
 
-const formatPositionValue = (value: string) => {
+const formatUsdValue = (value: string) => {
   if (value === "—" || value === "Loading…" || value === "Unavailable") {
     return value;
   }
@@ -85,14 +86,25 @@ const formatPositionValue = (value: string) => {
   return value.startsWith("$") ? value : `$${value}`;
 };
 
+const formatUsdFromToken = (amount: bigint, decimals: number | null) => {
+  if (decimals == null) {
+    return "Unavailable";
+  }
+
+  return formatUsdValue(
+    formatTokenAmount(formatUnits(amount, decimals), USD_PRECISION),
+  );
+};
+
 export function DepositSidebar({ className }: DepositSidebarProps = {}) {
   const [open, setOpen] = useState(false);
   const { address: accountAddress } = useAccount();
+  const { setRoute, setFlow } = useOpportunityRoute();
   const chainId = useChainId();
   const chainName = getChainNameById(chainId);
   const genericUnitTokenAddress = getGenericUnitTokenAddress(chainName);
   const gusdAddress = gusd.getAddress(chainName);
-  const { decimals: unitDecimals } = useErc20Decimals(genericUnitTokenAddress);
+  const { decimals: gusdDecimals } = useErc20Decimals(gusdAddress);
   const predepositChainId = CHAIN_ID_BY_NAME[chainName];
   const bridgeCoordinatorAddress = getBridgeCoordinatorAddress(chainName);
   const predepositChainNickname = getPredepositChainNickname(chainName);
@@ -124,7 +136,6 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
     data: predepositAmount,
     isLoading: isPredepositLoading,
     isError: isPredepositError,
-    error: predepositError,
   } = useReadContract({
     address: bridgeCoordinatorAddress,
     abi: bridgeCoordinatorAbi,
@@ -140,56 +151,33 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
     },
   });
 
-  useEffect(() => {
-    if (!accountAddress) {
-      return;
-    }
-
-    console.info("Predeposit read", {
-      address: bridgeCoordinatorAddress,
-      chainId: predepositChainId,
-      args: [predepositChainNickname, accountAddress, predepositRecipient],
-      enabled: predepositEnabled,
-    });
-  }, [
-    accountAddress,
-    bridgeCoordinatorAddress,
-    predepositChainId,
-    predepositChainNickname,
-    predepositEnabled,
-    predepositRecipient,
-  ]);
-
-  useEffect(() => {
-    if (!predepositError) {
-      return;
-    }
-
-    console.error("Predeposit read error", predepositError);
-  }, [predepositError]);
-
-  useEffect(() => {
-    if (predepositAmount == null) {
-      return;
-    }
-
-    console.info("Predeposit read result", {
-      amount: predepositAmount.toString(),
-      decimals: unitDecimals,
-    });
-  }, [predepositAmount, unitDecimals]);
-
-  const unitBalanceValue = useMemo(
-    () => formatPositionValue(formatTokenBalance(unitBalance, accountAddress)),
+  const unitTokenValue = useMemo(
+    () => formatTokenBalance(unitBalance, accountAddress),
     [accountAddress, unitBalance],
   );
 
-  const gusdBalanceValue = useMemo(
-    () => formatPositionValue(formatTokenBalance(gusdBalance, accountAddress)),
+  const gusdTokenValue = useMemo(
+    () => formatTokenBalance(gusdBalance, accountAddress),
     [accountAddress, gusdBalance],
   );
 
-  const predepositValue = useMemo(() => {
+  const gusdUsdValue = useMemo(() => {
+    if (!accountAddress) {
+      return "—";
+    }
+
+    if (gusdBalance.isLoading) {
+      return "Loading…";
+    }
+
+    if (gusdBalance.isError || gusdBalance.data?.value == null) {
+      return "Unavailable";
+    }
+
+    return formatUsdFromToken(gusdBalance.data.value, gusdDecimals ?? null);
+  }, [accountAddress, gusdBalance, gusdDecimals]);
+
+  const predepositTokenValue = useMemo(() => {
     if (!accountAddress) {
       return "—";
     }
@@ -198,19 +186,39 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
       return "Loading…";
     }
 
-    if (isPredepositError || predepositAmount == null || unitDecimals == null) {
+    if (isPredepositError || predepositAmount == null || gusdDecimals == null) {
       return "Unavailable";
     }
 
-    const formatted =
-      `${formatTokenAmount(formatUnits(predepositAmount, unitDecimals), POSITION_PRECISION)} GUSD`.trim();
-    return formatPositionValue(formatted);
+    return `${formatTokenAmount(formatUnits(predepositAmount, gusdDecimals), POSITION_PRECISION)} GUSD`.trim();
   }, [
     accountAddress,
+    gusdDecimals,
     isPredepositError,
     isPredepositLoading,
     predepositAmount,
-    unitDecimals,
+  ]);
+
+  const predepositUsdValue = useMemo(() => {
+    if (!accountAddress) {
+      return "—";
+    }
+
+    if (isPredepositLoading) {
+      return "Loading…";
+    }
+
+    if (isPredepositError || predepositAmount == null) {
+      return "Unavailable";
+    }
+
+    return formatUsdFromToken(predepositAmount, gusdDecimals ?? null);
+  }, [
+    accountAddress,
+    gusdDecimals,
+    isPredepositError,
+    isPredepositLoading,
+    predepositAmount,
   ]);
 
   const zeroBigInt = BigInt(0);
@@ -218,15 +226,34 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
   const hasGusd = (gusdBalance.data?.value ?? zeroBigInt) > zeroBigInt;
   const hasPredeposit = (predepositAmount ?? zeroBigInt) > zeroBigInt;
   const positionsCount = accountAddress
-    ? [hasUnits, hasGusd, hasPredeposit].filter(Boolean).length
+    ? [hasGusd, hasPredeposit].filter(Boolean).length
     : 0;
   const showEmptyState = positionsCount === 0;
+
+  const scrollToDeposit = () => {
+    const target = document.getElementById("deposit");
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleSelectOpportunity = (
+    route: "mainnet" | "predeposit" | "citrea",
+  ) => {
+    setRoute(route);
+    setFlow("deposit");
+    scrollToDeposit();
+  };
+
+  const handleSelectRedeem = () => {
+    setRoute("mainnet");
+    setFlow("redeem");
+    scrollToDeposit();
+  };
 
   return (
     <aside
       className={cn(
         "relative z-50 flex h-[520px] overflow-hidden rounded-l-3xl rounded-r-none border border-border/60 bg-card/60 transition-[width] duration-300 ease-out",
-        open ? "w-60" : "w-12",
+        open ? "w-80" : "w-12",
         className,
       )}
     >
@@ -237,86 +264,170 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
               type="button"
               aria-label="Collapse sidebar"
               aria-expanded={open}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background shadow-sm transition hover:bg-muted/40"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background shadow-sm transition hover:border-primary/30 hover:bg-muted/60 hover:text-foreground"
               onClick={() => setOpen(false)}
             >
               <ChevronRight className="h-4 w-4" />
             </button>
             <span className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Positions
+              Portfolio
             </span>
           </div>
-          <div className="flex flex-1 flex-col gap-4 px-4 py-6">
-            {hasUnits ? (
-              <div className="rounded-2xl border border-border/60 bg-background/70 p-4 shadow-sm transition hover:shadow-md">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Layers className="h-4 w-4" />
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em]">
-                    Units
-                  </p>
+          <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6">
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                Opportunities
+              </p>
+              <button
+                type="button"
+                onClick={() => handleSelectOpportunity("citrea")}
+                className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-left shadow-sm transition hover:border-primary/30 hover:bg-background hover:shadow-md"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-background/80 text-primary">
+                    <Sparkles className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      Citrea GUSD
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Balance unavailable
+                    </p>
+                  </div>
                 </div>
-                <p className="mt-2 text-lg font-semibold text-foreground">
-                  {unitBalanceValue}
-                </p>
-              </div>
-            ) : null}
-            {hasGusd ? (
-              <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4 shadow-sm transition hover:shadow-md">
-                <div className="flex items-center gap-2 text-primary/80">
-                  <Droplet className="h-4 w-4" />
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em]">
-                    GUSD
-                  </p>
-                </div>
-                <p className="mt-2 text-lg font-semibold text-foreground">
-                  {gusdBalanceValue}
-                </p>
-              </div>
-            ) : null}
-            {hasPredeposit ? (
-              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm transition hover:shadow-md">
-                <div className="flex items-center gap-2 text-primary/80">
-                  <Sparkles className="h-4 w-4" />
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em]">
-                    Status Predeposit
-                  </p>
-                </div>
-                <p className="mt-2 text-lg font-semibold text-foreground">
-                  {predepositValue}
-                </p>
-              </div>
-            ) : null}
-            {showEmptyState ? (
-              <div className="flex min-h-[110px] flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-background/70 p-4 text-center text-sm text-muted-foreground">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.22em]">
-                  No positions
+                <span className="rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+                  Deposit
                 </span>
-                <span className="mt-2 text-xs font-medium text-muted-foreground/80">
-                  Deposits will appear here.
-                </span>
-              </div>
-            ) : null}
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                Your positions
+              </p>
+
+              {hasGusd ? (
+                <div className="rounded-2xl border border-primary/25 bg-primary/10 p-4 shadow-sm transition hover:shadow-md">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 text-primary/80">
+                        <Droplet className="h-4 w-4" />
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em]">
+                          Mainnet GUSD
+                        </p>
+                      </div>
+                      <p className="mt-2 text-xl font-semibold text-foreground">
+                        {gusdUsdValue}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {gusdTokenValue}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <span className="rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        Live
+                      </span>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectOpportunity("mainnet")}
+                          className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-[11px] font-semibold text-foreground/80 transition hover:border-primary/30 hover:bg-background hover:text-foreground"
+                        >
+                          Add
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSelectRedeem}
+                          className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-[11px] font-semibold text-foreground/80 transition hover:border-primary/30 hover:bg-background hover:text-foreground"
+                        >
+                          Redeem
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {hasPredeposit ? (
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm transition hover:shadow-md">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 text-primary/80">
+                        <Lock className="h-4 w-4" />
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em]">
+                          Status L2 predeposit
+                        </p>
+                      </div>
+                      <p className="mt-2 text-xl font-semibold text-foreground">
+                        {predepositUsdValue}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {predepositTokenValue}
+                      </p>
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        Unlocks when Status L2 goes live · No penalties
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <span className="rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        Locked
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectOpportunity("predeposit")}
+                        className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-[11px] font-semibold text-foreground/80 transition hover:border-primary/30 hover:bg-background hover:text-foreground"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {hasUnits ? (
+                <div className="rounded-2xl border border-border/60 bg-background/70 p-4 shadow-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                    Vault shares
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-foreground">
+                    {unitTokenValue}
+                  </p>
+                </div>
+              ) : null}
+
+              {showEmptyState ? (
+                <div className="flex min-h-[110px] flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-background/70 p-4 text-center text-sm text-muted-foreground">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.22em]">
+                    No positions yet
+                  </span>
+                  <span className="mt-2 text-xs font-medium text-muted-foreground/80">
+                    Choose an opportunity to start earning
+                  </span>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : (
-        <div className="flex h-full w-full flex-col items-center gap-3 px-2 py-4">
-          <button
-            type="button"
-            aria-label="Expand sidebar"
-            aria-expanded={open}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background shadow-sm transition hover:bg-muted/40"
-            onClick={() => setOpen(true)}
-          >
+        <button
+          type="button"
+          aria-label="Expand portfolio"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+          className="group flex h-full w-full cursor-pointer flex-col items-center gap-3 px-2 py-4 text-left transition hover:bg-background/40"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background shadow-sm transition group-hover:border-primary/30 group-hover:bg-muted/60">
             <ChevronLeft className="h-4 w-4" />
-          </button>
+          </span>
           <div className="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground shadow-sm">
             {positionsCount}
           </div>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground [writing-mode:vertical-rl] [text-orientation:upright]">
-            Positions
+          <span className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground [writing-mode:vertical-rl] [text-orientation:upright] group-hover:text-foreground">
+            Portfolio
           </span>
           <div className="flex-1" />
-        </div>
+        </button>
       )}
     </aside>
   );

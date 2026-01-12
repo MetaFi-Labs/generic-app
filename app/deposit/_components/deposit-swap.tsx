@@ -111,7 +111,7 @@ const OPPORTUNITY_OPTIONS: OpportunityOption[] = [
   },
   {
     value: "predeposit",
-    eyebrow: "Status L2 Predeposit",
+    eyebrow: "Status L2 GUSD",
     title: "Predeposit for Status L2",
     description: "Lock funds for Status L2 launch with zero penalties",
     apy: "—%",
@@ -150,7 +150,7 @@ const OpportunityCard = ({
     <label
       style={style}
       className={cn(
-        "group flex cursor-pointer flex-col gap-2 rounded-xl border px-4 py-3 shadow-sm transition-all focus-visible-within:outline-none focus-visible-within:ring-2 focus-visible-within:ring-ring focus-visible-within:ring-offset-2 focus-visible-within:ring-offset-background",
+        "group flex w-full max-w-[20.5rem] cursor-pointer flex-col rounded-xl border px-4 py-3 shadow-sm transition-all focus-visible-within:outline-none focus-visible-within:ring-2 focus-visible-within:ring-ring focus-visible-within:ring-offset-2 focus-visible-within:ring-offset-background",
         selected
           ? "border-primary/50 bg-primary/10 shadow-[0_18px_35px_-30px_rgba(37,99,235,0.5)]"
           : "border-border/70 bg-background/70 hover:-translate-y-0.5 hover:border-[hsl(var(--opportunity-color))] hover:bg-background hover:shadow-md",
@@ -164,26 +164,32 @@ const OpportunityCard = ({
         className="sr-only"
       />
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+        <span className="truncate text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
           {option.eyebrow}
         </span>
         {option.badge ? (
-          <span className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition group-hover:border-[hsl(var(--opportunity-color)/0.45)] group-hover:bg-[hsl(var(--opportunity-color)/0.2)] group-hover:text-[hsl(var(--opportunity-color))]">
+          <span className="shrink-0 whitespace-nowrap rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition group-hover:border-[hsl(var(--opportunity-color)/0.45)] group-hover:bg-[hsl(var(--opportunity-color)/0.2)] group-hover:text-[hsl(var(--opportunity-color))]">
             {option.badge}
           </span>
         ) : null}
       </div>
-      <div className="space-y-1">
-        <h3 className="text-sm font-semibold text-foreground">
-          {option.title}
-        </h3>
-        <p className="text-xs text-muted-foreground">{option.description}</p>
-      </div>
-      <div className="flex items-center justify-between text-[11px] font-semibold text-foreground/70">
-        <span className="rounded-full border border-border/60 bg-background/70 px-2.5 py-0.5">
-          APY {option.apy}
-        </span>
-        <span className="text-muted-foreground">{option.note}</span>
+      <div className="mt-2 flex min-h-[92px] flex-1 flex-col">
+        <div className="space-y-1">
+          <h3 className="line-clamp-1 text-sm font-semibold text-foreground">
+            {option.title}
+          </h3>
+          <p className="line-clamp-2 min-h-[32px] text-xs text-muted-foreground">
+            {option.description}
+          </p>
+        </div>
+        <div className="mt-auto flex items-center justify-between text-[11px] font-semibold text-foreground/70">
+          <span className="whitespace-nowrap rounded-full border border-border/60 bg-background/70 px-2.5 py-0.5">
+            APY {option.apy}
+          </span>
+          <span className="whitespace-nowrap text-muted-foreground">
+            {option.note}
+          </span>
+        </div>
       </div>
     </label>
   );
@@ -205,9 +211,13 @@ export function DepositSwap() {
   });
   const [selectedTicker, setSelectedTicker] =
     useState<StablecoinTicker>("USDC");
-  const { route: depositRoute, setRoute: setDepositRoute } =
-    useOpportunityRoute();
-  const [isDepositFlow, setIsDepositFlow] = useState(true);
+  const {
+    route: depositRoute,
+    setRoute: setDepositRoute,
+    flow,
+    setFlow,
+  } = useOpportunityRoute();
+  const isDepositFlow = flow === "deposit";
   const [fromAmount, setFromAmount] = useState("");
   const [txStep, setTxStep] = useState<"idle" | "approving" | "submitting">(
     "idle",
@@ -239,7 +249,7 @@ export function DepositSwap() {
     : "Redeem GUSD back into your selected stablecoin.";
 
   const handleSwitchDirection = () => {
-    setIsDepositFlow((prev) => !prev);
+    setFlow(isDepositFlow ? "redeem" : "deposit");
   };
 
   const handleStablecoinChange = (value: StablecoinTicker) => {
@@ -761,9 +771,9 @@ export function DepositSwap() {
   };
 
   return (
-    <div className="w-full px-6 md:px-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
-        <div className="-mt-6 space-y-4 text-center">
+    <div id="deposit" className="w-full px-6 md:px-8">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
+        <div className="-mt-20 space-y-4 text-center">
           <span className="text-xs font-semibold uppercase tracking-[0.4em] text-muted-foreground">
             Generic Money
           </span>
@@ -774,9 +784,9 @@ export function DepositSwap() {
             Choose the opportunity that matches your DeFi strategy
           </p>
         </div>
-        <fieldset className="mt-8 space-y-4">
+        <fieldset className="mt-20 space-y-4">
           <legend className="sr-only">Opportunity selection</legend>
-          <div className="grid gap-3 lg:grid-cols-3">
+          <div className="grid justify-items-center gap-3 lg:grid-cols-3">
             {OPPORTUNITY_OPTIONS.map((option) => (
               <OpportunityCard
                 key={option.value}

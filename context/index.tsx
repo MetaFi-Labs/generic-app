@@ -68,12 +68,17 @@ type ContextProviderProps = {
   cookies: string | null;
 };
 
+type SwapFlow = "deposit" | "redeem";
+
 type OpportunityRouteContextValue = {
   route: OpportunityRoute;
   setRoute: (route: OpportunityRoute) => void;
+  flow: SwapFlow;
+  setFlow: (flow: SwapFlow) => void;
 };
 
 const OPPORTUNITY_STORAGE_KEY = "generic.opportunityRoute";
+const SWAP_FLOW_STORAGE_KEY = "generic.swapFlow";
 
 const OpportunityRouteContext = React.createContext<
   OpportunityRouteContextValue | undefined
@@ -108,6 +113,7 @@ export default function ContextProvider({
   const [route, setRoute] = React.useState<OpportunityRoute>(
     DEFAULT_OPPORTUNITY_ROUTE,
   );
+  const [flow, setFlow] = React.useState<SwapFlow>("deposit");
 
   React.useEffect(() => {
     if (typeof window === "undefined") {
@@ -122,6 +128,11 @@ export default function ContextProvider({
     ) {
       setRoute(stored);
     }
+
+    const storedFlow = window.localStorage.getItem(SWAP_FLOW_STORAGE_KEY);
+    if (storedFlow === "deposit" || storedFlow === "redeem") {
+      setFlow(storedFlow);
+    }
   }, []);
 
   React.useEffect(() => {
@@ -133,12 +144,23 @@ export default function ContextProvider({
     applyOpportunityThemeToRoot(route);
   }, [route]);
 
+  React.useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(SWAP_FLOW_STORAGE_KEY, flow);
+  }, [flow]);
+
   const initialState = cookieToInitialState(
     wagmiAdapter.wagmiConfig as Config,
     cookies,
   );
 
-  const value = React.useMemo(() => ({ route, setRoute }), [route]);
+  const value = React.useMemo(
+    () => ({ route, setRoute, flow, setFlow }),
+    [flow, route],
+  );
 
   return (
     <WagmiProvider
