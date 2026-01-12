@@ -1,8 +1,4 @@
 import type { ChainName } from "./chains";
-import {
-  SEPOLIA_GUSD_TOKEN_ADDRESS,
-  SEPOLIA_STABLECOIN_ADDRESSES,
-} from "./sepolia-addresses";
 
 type Address = `0x${string}`;
 
@@ -40,7 +36,6 @@ export const STABLECOIN_DEFINITIONS: Record<
         tokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
         depositVaultAddress: "0x4825eFF24F9B7b76EEAFA2ecc6A1D5dFCb3c1c3f",
       },
-      sepolia: SEPOLIA_STABLECOIN_ADDRESSES.USDC,
     },
   },
   USDT: {
@@ -52,7 +47,6 @@ export const STABLECOIN_DEFINITIONS: Record<
         tokenAddress: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
         depositVaultAddress: "0xB8280955aE7b5207AF4CDbdCd775135Bd38157fE",
       },
-      sepolia: SEPOLIA_STABLECOIN_ADDRESSES.USDT,
     },
   },
   USDS: {
@@ -74,7 +68,6 @@ export const GUSD_DEFINITION = {
   iconUrl: "/tokens/gusd.svg",
   chains: {
     mainnet: "0xece811d35f79C4868a2B911E55D9aa0821399EDF",
-    sepolia: SEPOLIA_GUSD_TOKEN_ADDRESS,
   },
 } as const satisfies MultichainTokenDefinition<"GUSD">;
 

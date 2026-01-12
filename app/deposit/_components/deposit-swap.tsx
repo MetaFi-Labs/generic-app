@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUpDown } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { erc20Abi, erc4626Abi } from "viem";
 import {
   useAccount,
@@ -27,7 +27,7 @@ import {
   getGenericDepositorAddress,
   getGenericUnitTokenAddress,
 } from "@/lib/constants/contracts";
-import { PREDEPOSIT_CHAIN_NICKNAME } from "@/lib/constants/predeposit";
+import { getPredepositChainNickname } from "@/lib/constants/predeposit";
 import type { StablecoinTicker } from "@/lib/constants/stablecoins";
 import { getStablecoins, gusd } from "@/lib/models/tokens";
 import type { HexAddress } from "@/lib/types/address";
@@ -44,7 +44,7 @@ const whitelabeledUnitAbi =
   whitelabeledUnitArtifact.abi as typeof whitelabeledUnitArtifact.abi;
 
 type AssetType = "stablecoin" | "gusd";
-type DepositRoute = "predeposit" | "mainnet";
+type DepositRoute = "predeposit" | "mainnet" | "citrea";
 const ZERO_AMOUNT = BigInt(0);
 type HexBytes = `0x${string}`;
 
@@ -83,35 +83,136 @@ const TokenIcon = ({ src, alt }: { src: string; alt: string }) => (
   />
 );
 
-const Chip = ({
-  label,
+type OpportunityOption = {
+  value: DepositRoute;
+  eyebrow: string;
+  title: string;
+  description: string;
+  apy: string;
+  note: string;
+  formDescription: string;
+  badge?: string;
+};
+
+const OPPORTUNITY_OPTIONS: OpportunityOption[] = [
+  {
+    value: "citrea",
+    eyebrow: "Citrea GUSD",
+    title: "Join the OGs with Citrea",
+    description: "Citrea-native GUSD for DeFi power users",
+    apy: "—%",
+    note: "L2-native settlement",
+    formDescription: "Deposit stablecoins to mint Citrea-native GUSD",
+    badge: "OG access",
+  },
+  {
+    value: "predeposit",
+    eyebrow: "Status L2 Predeposit",
+    title: "Predeposit for Status L2",
+    description: "Lock funds for Status L2 launch with zero penalties",
+    apy: "—%",
+    note: "Unlocks at launch",
+    formDescription: "Lock stablecoins now to mint once Status L2 goes live",
+    badge: "FOMO shield",
+  },
+  {
+    value: "mainnet",
+    eyebrow: "Mainnet GUSD",
+    title: "Mainnet GUSD — safe, simple yield",
+    description: "Direct mainnet deposit with immediate mint access",
+    apy: "—%",
+    note: "Mainnet security",
+    formDescription: "Deposit stablecoins and mint GUSD on mainnet",
+  },
+];
+
+
+type OpportunityTheme = {
+  primary: string;
+  primaryForeground: string;
+  accent: string;
+  ring: string;
+};
+
+const OPPORTUNITY_THEME: Record<DepositRoute, OpportunityTheme> = {
+  citrea: {
+    primary: "24 94% 56%",
+    primaryForeground: "0 0% 100%",
+    accent: "24 100% 95%",
+    ring: "24 94% 56%",
+  },
+  predeposit: {
+    primary: "262 94% 62%",
+    primaryForeground: "0 0% 100%",
+    accent: "262 100% 96%",
+    ring: "262 94% 62%",
+  },
+  mainnet: {
+    primary: "221 100% 58%",
+    primaryForeground: "221 100% 96%",
+    accent: "221 100% 94%",
+    ring: "221 100% 58%",
+  },
+};
+
+const OpportunityCard = ({
+  option,
   selected,
   onSelect,
   name,
 }: {
-  label: string;
+  option: OpportunityOption;
   selected: boolean;
   onSelect: () => void;
   name: string;
-}) => (
-  <label
-    className={cn(
-      "inline-flex cursor-pointer items-center rounded-full border px-3 py-1 text-xs font-semibold transition focus-visible-within:outline-none focus-visible-within:ring-2 focus-visible-within:ring-ring focus-visible-within:ring-offset-2 focus-visible-within:ring-offset-background",
-      selected
-        ? "border-primary/40 bg-primary/10 text-foreground"
-        : "border-border/60 bg-background/70 text-muted-foreground hover:bg-background/90 hover:text-foreground",
-    )}
-  >
-    <input
-      type="radio"
-      name={name}
-      checked={selected}
-      onChange={onSelect}
-      className="sr-only"
-    />
-    {label}
-  </label>
-);
+}) => {
+  const optionTone = OPPORTUNITY_THEME[option.value] ?? OPPORTUNITY_THEME.mainnet;
+  const style = {
+    "--opportunity-color": optionTone.primary,
+  } as CSSProperties;
+
+  return (
+    <label
+      style={style}
+      className={cn(
+        "group flex cursor-pointer flex-col gap-2 rounded-xl border px-4 py-3 shadow-sm transition-all focus-visible-within:outline-none focus-visible-within:ring-2 focus-visible-within:ring-ring focus-visible-within:ring-offset-2 focus-visible-within:ring-offset-background",
+        selected
+          ? "border-primary/50 bg-primary/10 shadow-[0_18px_35px_-30px_rgba(37,99,235,0.5)]"
+          : "border-border/70 bg-background/70 hover:-translate-y-0.5 hover:border-[hsl(var(--opportunity-color))] hover:bg-background hover:shadow-md",
+      )}
+    >
+      <input
+        type="radio"
+        name={name}
+        checked={selected}
+        onChange={onSelect}
+        className="sr-only"
+      />
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+          {option.eyebrow}
+        </span>
+        {option.badge ? (
+          <span className="rounded-full border border-[hsl(var(--opportunity-color)/0.25)] bg-[hsl(var(--opportunity-color)/0.12)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--opportunity-color)/0.75)] transition group-hover:border-[hsl(var(--opportunity-color)/0.45)] group-hover:bg-[hsl(var(--opportunity-color)/0.2)] group-hover:text-[hsl(var(--opportunity-color))]">
+            {option.badge}
+          </span>
+        ) : null}
+      </div>
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold text-foreground">
+          {option.title}
+        </h3>
+        <p className="text-xs text-muted-foreground">{option.description}</p>
+      </div>
+      <div className="flex items-center justify-between text-[11px] font-semibold text-foreground/70">
+        <span className="rounded-full border border-border/60 bg-background/70 px-2.5 py-0.5">
+          APY {option.apy}
+        </span>
+        <span className="text-muted-foreground">{option.note}</span>
+      </div>
+    </label>
+  );
+};
 
 export function DepositSwap() {
   const { address: accountAddress } = useAccount();
@@ -130,7 +231,7 @@ export function DepositSwap() {
   const [selectedTicker, setSelectedTicker] =
     useState<StablecoinTicker>("USDC");
   const [isDepositFlow, setIsDepositFlow] = useState(true);
-  const [depositRoute, setDepositRoute] = useState<DepositRoute>("mainnet");
+  const [depositRoute, setDepositRoute] = useState<DepositRoute>("citrea");
   const [fromAmount, setFromAmount] = useState("");
   const [txStep, setTxStep] = useState<"idle" | "approving" | "submitting">(
     "idle",
@@ -149,6 +250,61 @@ export function DepositSwap() {
       stablecoins[0],
     [selectedTicker, stablecoins],
   );
+
+  const selectedOpportunity = useMemo(
+    () =>
+      OPPORTUNITY_OPTIONS.find((option) => option.value === depositRoute) ??
+      OPPORTUNITY_OPTIONS[0],
+    [depositRoute],
+  );
+
+  const themeTokens = useMemo(
+    () => OPPORTUNITY_THEME[depositRoute] ?? OPPORTUNITY_THEME.mainnet,
+    [depositRoute],
+  );
+
+  const defaultTheme = useRef<OpportunityTheme | null>(null);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!defaultTheme.current) {
+      const computed = getComputedStyle(root);
+      defaultTheme.current = {
+        primary: computed.getPropertyValue("--primary").trim(),
+        primaryForeground: computed.getPropertyValue("--primary-foreground").trim(),
+        accent: computed.getPropertyValue("--accent").trim(),
+        ring: computed.getPropertyValue("--ring").trim(),
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--primary", themeTokens.primary);
+    root.style.setProperty("--primary-foreground", themeTokens.primaryForeground);
+    root.style.setProperty("--accent", themeTokens.accent);
+    root.style.setProperty("--ring", themeTokens.ring);
+  }, [themeTokens]);
+
+  useEffect(() => {
+    return () => {
+      if (!defaultTheme.current) {
+        return;
+      }
+      const root = document.documentElement;
+      root.style.setProperty("--primary", defaultTheme.current.primary);
+      root.style.setProperty(
+        "--primary-foreground",
+        defaultTheme.current.primaryForeground,
+      );
+      root.style.setProperty("--accent", defaultTheme.current.accent);
+      root.style.setProperty("--ring", defaultTheme.current.ring);
+    };
+  }, []);
+
+  const formDescription = isDepositFlow
+    ? selectedOpportunity.formDescription
+    : "Redeem GUSD back into your selected stablecoin.";
 
   const handleSwitchDirection = () => {
     setIsDepositFlow((prev) => !prev);
@@ -172,6 +328,7 @@ export function DepositSwap() {
 
   const depositorAddress = getGenericDepositorAddress(chainName);
   const genericUnitTokenAddress = getGenericUnitTokenAddress(chainName);
+  const predepositChainNickname = getPredepositChainNickname(chainName);
 
   const stablecoinBalance = useBalance({
     address: accountAddress,
@@ -282,12 +439,22 @@ export function DepositSwap() {
     ? needsDepositApproval
     : needsRedeemApproval;
 
+  const depositActionLabel =
+    depositRoute === "predeposit"
+      ? "Predeposit"
+      : depositRoute === "citrea"
+        ? "Citrea deposit"
+        : "Deposit";
+
+  const depositButtonLabel =
+    depositRoute === "predeposit"
+      ? "Predeposit"
+      : depositRoute === "citrea"
+        ? "Deposit to Citrea"
+        : "Deposit";
+
   const buttonState = useMemo(() => {
-    const actionLabel = isDepositFlow
-      ? isPredepositDeposit
-        ? "Predeposit"
-        : "Deposit"
-      : "Redeem";
+    const actionLabel = isDepositFlow ? depositButtonLabel : "Redeem";
 
     if (!accountAddress) {
       return { label: "Connect wallet", disabled: true };
@@ -344,6 +511,7 @@ export function DepositSwap() {
     return { label: actionLabel, disabled: false };
   }, [
     accountAddress,
+    depositButtonLabel,
     depositorAddress,
     gusdAddress,
     genericUnitTokenAddress,
@@ -382,7 +550,7 @@ export function DepositSwap() {
           address: approvalToken,
           chainId: activeChainId,
           args: [depositorAddress, parsedAmount],
-          route: isPredepositDeposit ? "predeposit" : "mainnet",
+          route: depositRoute,
         });
         const approvalHash = await writeContractAsync({
           abi: erc20Abi,
@@ -413,7 +581,7 @@ export function DepositSwap() {
           args: [
             stablecoinAddress,
             parsedAmount,
-            PREDEPOSIT_CHAIN_NICKNAME,
+            predepositChainNickname,
             remoteRecipient,
           ],
         });
@@ -425,7 +593,7 @@ export function DepositSwap() {
           args: [
             stablecoinAddress,
             parsedAmount,
-            PREDEPOSIT_CHAIN_NICKNAME,
+            predepositChainNickname,
             remoteRecipient,
           ],
         });
@@ -447,15 +615,9 @@ export function DepositSwap() {
           args: [stablecoinAddress, gusdAddress, parsedAmount],
         });
       }
-      notifyTxSubmitted(
-        isPredepositDeposit ? "Predeposit" : "Deposit",
-        depositHash,
-      );
+      notifyTxSubmitted(depositActionLabel, depositHash);
       await publicClient.waitForTransactionReceipt({ hash: depositHash });
-      notifyTxConfirmed(
-        isPredepositDeposit ? "Predeposit" : "Deposit",
-        depositHash,
-      );
+      notifyTxConfirmed(depositActionLabel, depositHash);
 
       setFromAmount("");
       const balanceRefetches: Promise<unknown>[] = [];
@@ -668,86 +830,99 @@ export function DepositSwap() {
 
   return (
     <div className="w-full px-6 md:px-8">
-      <div className="mx-auto flex w-full max-w-4xl justify-center">
-        <div className="flex w-full max-w-md flex-col gap-6 rounded-3xl border border-border/60 bg-card/60 p-8 shadow-[0_35px_60px_-40px_rgba(15,23,42,0.45)] backdrop-blur">
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-            <span>{isDepositFlow ? "Deposit" : "Redeem"}</span>
-            <span>Vault</span>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
+        <div className="-mt-6 space-y-4 text-center">
+          <span className="text-xs font-semibold uppercase tracking-[0.4em] text-muted-foreground">
+            Generic Money
+          </span>
+          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+            Deploy USD with your own flavour
+          </h1>
+          <p className="mx-auto max-w-2xl text-sm text-muted-foreground md:text-base">
+            Choose the opportunity that matches your DeFi strategy
+          </p>
+        </div>
+        <fieldset className="mt-8 space-y-4">
+          <legend className="sr-only">Opportunity selection</legend>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {OPPORTUNITY_OPTIONS.map((option) => (
+              <OpportunityCard
+                key={option.value}
+                option={option}
+                selected={depositRoute === option.value}
+                name="deposit-route"
+                onSelect={() => setDepositRoute(option.value)}
+              />
+            ))}
           </div>
-          <div className="flex flex-col gap-4">
-            <SwapAssetPanel
-              label="From"
-              selector={renderAssetSelector(
-                isDepositFlow ? "stablecoin" : "gusd",
-              )}
-              inputProps={{
-                placeholder: isDepositFlow
-                  ? `Amount in ${selectedStablecoin?.ticker ?? ""}`
-                  : "Amount in GUSD",
-                autoComplete: "off",
-                value: fromAmount,
-                onChange: (event) => setFromAmount(event.target.value),
-              }}
-              balance={{
-                text: fromBalanceText,
-                interactive: canUseMax,
-                onClick: canUseMax ? handleMaxClick : undefined,
-              }}
-            />
+        </fieldset>
+        <div className="flex w-full justify-center">
+          <div className="flex w-full max-w-md flex-col gap-6 rounded-3xl border border-border/60 bg-card/80 p-8 shadow-[0_35px_60px_-40px_rgba(15,23,42,0.45)] backdrop-blur">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                <span>{isDepositFlow ? "Deposit" : "Redeem"}</span>
+                <span>{selectedOpportunity.eyebrow}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{formDescription}</p>
+            </div>
+            <div className="flex flex-col gap-4">
+              <SwapAssetPanel
+                label="From"
+                selector={renderAssetSelector(
+                  isDepositFlow ? "stablecoin" : "gusd",
+                )}
+                inputProps={{
+                  placeholder: isDepositFlow
+                    ? `Amount in ${selectedStablecoin?.ticker ?? ""}`
+                    : "Amount in GUSD",
+                  autoComplete: "off",
+                  value: fromAmount,
+                  onChange: (event) => setFromAmount(event.target.value),
+                }}
+                balance={{
+                  text: fromBalanceText,
+                  interactive: canUseMax,
+                  onClick: canUseMax ? handleMaxClick : undefined,
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleSwitchDirection}
+                aria-label="Switch direction"
+                className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/80 text-muted-foreground shadow-sm transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <ArrowUpDown className="h-4 w-4" />
+              </button>
+              <SwapAssetPanel
+                label="To"
+                selector={renderAssetSelector(
+                  isDepositFlow ? "gusd" : "stablecoin",
+                )}
+                inputProps={{
+                  placeholder: isDepositFlow
+                    ? "Amount in GUSD"
+                    : `Amount in ${selectedStablecoin?.ticker ?? ""}`,
+                  disabled: true,
+                  readOnly: true,
+                  value: estimatedToAmount,
+                }}
+                balance={{
+                  text: toBalanceText,
+                }}
+              />
+            </div>
             <button
               type="button"
-              onClick={handleSwitchDirection}
-              aria-label="Switch direction"
-              className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/80 text-muted-foreground shadow-sm transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              onClick={handlePrimaryAction}
+              disabled={buttonState.disabled}
+              className="h-11 rounded-xl bg-gradient-to-r from-primary via-primary/90 to-primary/95 text-sm font-semibold text-primary-foreground transition hover:from-primary/90 hover:via-primary/80 hover:to-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <ArrowUpDown className="h-4 w-4" />
+              {buttonState.label}
             </button>
-            <SwapAssetPanel
-              label="To"
-              selector={renderAssetSelector(
-                isDepositFlow ? "gusd" : "stablecoin",
-              )}
-              inputProps={{
-                placeholder: isDepositFlow
-                  ? "Amount in GUSD"
-                  : `Amount in ${selectedStablecoin?.ticker ?? ""}`,
-                disabled: true,
-                readOnly: true,
-                value: estimatedToAmount,
-              }}
-              balance={{
-                text: toBalanceText,
-              }}
-            />
+            {txError ? (
+              <p className="text-center text-xs text-destructive">{txError}</p>
+            ) : null}
           </div>
-          {isDepositFlow ? (
-            <fieldset className="flex flex-wrap items-center justify-center gap-2">
-              <legend className="sr-only">Deposit route</legend>
-              <Chip
-                label="Status Predeposit"
-                selected={depositRoute === "predeposit"}
-                name="deposit-route"
-                onSelect={() => setDepositRoute("predeposit")}
-              />
-              <Chip
-                label="Mainnet"
-                selected={depositRoute === "mainnet"}
-                name="deposit-route"
-                onSelect={() => setDepositRoute("mainnet")}
-              />
-            </fieldset>
-          ) : null}
-          <button
-            type="button"
-            onClick={handlePrimaryAction}
-            disabled={buttonState.disabled}
-            className="h-11 rounded-xl bg-gradient-to-r from-primary via-primary/90 to-primary/95 text-sm font-semibold text-primary-foreground transition hover:from-primary/90 hover:via-primary/80 hover:to-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {buttonState.label}
-          </button>
-          {txError ? (
-            <p className="text-center text-xs text-destructive">{txError}</p>
-          ) : null}
         </div>
       </div>
     </div>

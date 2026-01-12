@@ -1,8 +1,36 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight, Coins, Layers, ShieldCheck } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUpRight,
+  BadgeCheck,
+  Coins,
+  Layers,
+  LineChart,
+  ShieldCheck,
+} from "lucide-react";
 
 import { DepositSidebar } from "./deposit/_components/deposit-sidebar";
 import { DepositSwap } from "./deposit/_components/deposit-swap";
+
+const TRUST_ITEMS = [
+  {
+    title: "Audit by Cantina",
+    description: "Read the report",
+    href: "https://www.generic.money/whitepaper.pdf",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Risk by Steakhouse",
+    description: "DeFi-native risk management",
+    icon: BadgeCheck,
+  },
+  {
+    title: "Fund dashboard",
+    description: "Live transparency",
+    href: "https://generic-analytics.vercel.app/",
+    icon: LineChart,
+  },
+];
 
 export default function HomePage() {
   return (
@@ -20,11 +48,11 @@ export default function HomePage() {
         <div className="container mx-auto max-w-6xl space-y-8">
           <header className="space-y-2">
             <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
-              Deposit insights
+              Protocol insights
             </h2>
             <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
-              Track vault utilization, bridge finality, and mint readiness
-              before you deploy capital.
+              Track liquidity, launch readiness, and mint status before you
+              deploy capital.
             </p>
           </header>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -32,15 +60,15 @@ export default function HomePage() {
               className="group relative min-h-[240px] overflow-hidden rounded-2xl border border-border/60 bg-background/95 p-6 shadow-[0_20px_40px_-35px_rgba(15,23,42,0.35)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_25px_55px_-35px_rgba(15,23,42,0.45)] motion-reduce:transform-none motion-reduce:transition-none animate-in fade-in-0 slide-in-from-bottom-4 duration-700"
               style={{ animationDelay: "40ms" }}
             >
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_120%_at_0%_0%,hsl(var(--blue-25)/0.4)_0%,transparent_60%)] opacity-90" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_120%_at_0%_0%,hsl(var(--accent)/0.45)_0%,transparent_60%)] opacity-90" />
               <div className="relative flex h-full flex-col gap-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
                     <span className="inline-flex w-fit items-center rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Predeposit
+                      Status GUSD
                     </span>
                     <h3 className="text-lg font-semibold">
-                      Status Predeposit Vaults
+                      Status L2 predeposit status
                     </h3>
                   </div>
                   <span className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/80 text-primary shadow-sm">
@@ -48,8 +76,7 @@ export default function HomePage() {
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Monitor TVL caps, queue depth, and settlement throughput
-                  before you commit liquidity.
+                  Track TVL cap, queue depth, and launch readiness for Status L2.
                 </p>
                 <div className="mt-auto flex flex-wrap gap-2 text-xs font-semibold text-foreground/80">
                   <span className="rounded-full border border-border/60 bg-background/70 px-3 py-1">
@@ -59,15 +86,15 @@ export default function HomePage() {
                     Queue depth
                   </span>
                   <span className="rounded-full border border-border/60 bg-background/70 px-3 py-1">
-                    Settle rate
+                    Launch readiness
                   </span>
                 </div>
                 <Link
                   href="/documentation"
                   className="inline-flex items-center gap-2 text-sm font-semibold text-foreground/70 transition group-hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  aria-label="Read the predeposit vault status guide"
+                  aria-label="Read the Status L2 predeposit guide"
                 >
-                  View vault status
+                  View Status L2 status
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -76,15 +103,15 @@ export default function HomePage() {
               className="group relative min-h-[240px] overflow-hidden rounded-2xl border border-border/60 bg-background/95 p-6 shadow-[0_20px_40px_-35px_rgba(15,23,42,0.35)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_25px_55px_-35px_rgba(15,23,42,0.45)] motion-reduce:transform-none motion-reduce:transition-none animate-in fade-in-0 slide-in-from-bottom-4 duration-700"
               style={{ animationDelay: "120ms" }}
             >
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_120%_at_100%_0%,hsl(var(--blue-15)/0.35)_0%,transparent_60%)] opacity-90" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_120%_at_100%_0%,hsl(var(--accent)/0.35)_0%,transparent_60%)] opacity-90" />
               <div className="relative flex h-full flex-col gap-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
                     <span className="inline-flex w-fit items-center rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Bridge
+                      Citrea GUSD
                     </span>
                     <h3 className="text-lg font-semibold">
-                      Citrea L2 bridging
+                      Citrea GUSD liquidity
                     </h3>
                   </div>
                   <span className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/80 text-primary shadow-sm">
@@ -92,26 +119,25 @@ export default function HomePage() {
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Track L1 to Citrea bridge finality, transfer ETA, and fee
-                  estimates for capital routing.
+                  Monitor liquidity depth, fee tier, and settlement pace on Citrea.
                 </p>
                 <div className="mt-auto flex flex-wrap gap-2 text-xs font-semibold text-foreground/80">
                   <span className="rounded-full border border-border/60 bg-background/70 px-3 py-1">
-                    Bridge finality
+                    Liquidity depth
                   </span>
                   <span className="rounded-full border border-border/60 bg-background/70 px-3 py-1">
-                    Transfer ETA
+                    Fee tier
                   </span>
                   <span className="rounded-full border border-border/60 bg-background/70 px-3 py-1">
-                    Fee estimate
+                    Settlement pace
                   </span>
                 </div>
                 <Link
                   href="/documentation"
                   className="inline-flex items-center gap-2 text-sm font-semibold text-foreground/70 transition group-hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  aria-label="Read the Citrea bridging guide"
+                  aria-label="Read the Citrea GUSD guide"
                 >
-                  Track bridge status
+                  View Citrea metrics
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -120,15 +146,15 @@ export default function HomePage() {
               className="group relative min-h-[240px] overflow-hidden rounded-2xl border border-border/60 bg-background/95 p-6 shadow-[0_20px_40px_-35px_rgba(15,23,42,0.35)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_25px_55px_-35px_rgba(15,23,42,0.45)] motion-reduce:transform-none motion-reduce:transition-none animate-in fade-in-0 slide-in-from-bottom-4 duration-700"
               style={{ animationDelay: "200ms" }}
             >
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(130%_120%_at_100%_100%,hsl(var(--blue-100)/0.12)_0%,transparent_60%)] opacity-90" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(130%_120%_at_100%_100%,hsl(var(--primary)/0.12)_0%,transparent_60%)] opacity-90" />
               <div className="relative flex h-full flex-col gap-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
                     <span className="inline-flex w-fit items-center rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Mint
+                      Mainnet GUSD
                     </span>
                     <h3 className="text-lg font-semibold">
-                      Minting GUSD on mainnet
+                      Mainnet GUSD minting
                     </h3>
                   </div>
                   <span className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/80 text-primary shadow-sm">
@@ -136,8 +162,7 @@ export default function HomePage() {
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Follow collateral readiness, proof availability, and mint
-                  windows before issuing GUSD.
+                  Follow collateral readiness, proofs, and mint windows on mainnet.
                 </p>
                 <div className="mt-auto flex flex-wrap gap-2 text-xs font-semibold text-foreground/80">
                   <span className="rounded-full border border-border/60 bg-background/70 px-3 py-1">
@@ -153,12 +178,61 @@ export default function HomePage() {
                 <Link
                   href="/documentation"
                   className="inline-flex items-center gap-2 text-sm font-semibold text-foreground/70 transition group-hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  aria-label="Read the GUSD minting guide"
+                  aria-label="Read the mainnet GUSD guide"
                 >
-                  Open mint guide
+                  View mainnet status
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </div>
+            </div>
+          </div>
+          <div className="pt-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+              Trust & transparency
+            </p>
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
+              {TRUST_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const content = (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-background/80 text-primary">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">
+                          {item.title}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                    {item.href ? (
+                      <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                    ) : null}
+                  </>
+                );
+
+                const className =
+                  "flex items-center justify-between gap-4 rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-xs transition hover:border-primary/30 hover:bg-background";
+
+                return item.href ? (
+                  <a
+                    key={item.title}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={className}
+                  >
+                    {content}
+                  </a>
+                ) : (
+                  <div key={item.title} className={className}>
+                    {content}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

@@ -18,7 +18,7 @@ import {
 import { getGenericUnitTokenAddress } from "@/lib/constants/contracts";
 import {
   getBridgeCoordinatorAddress,
-  PREDEPOSIT_CHAIN_NICKNAME,
+  getPredepositChainNickname,
 } from "@/lib/constants/predeposit";
 import { gusd } from "@/lib/models/tokens";
 import { type HexAddress, ZERO_ADDRESS } from "@/lib/types/address";
@@ -98,6 +98,7 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
   const { decimals: unitDecimals } = useErc20Decimals(genericUnitTokenAddress);
   const predepositChainId = CHAIN_ID_BY_NAME[chainName];
   const bridgeCoordinatorAddress = getBridgeCoordinatorAddress(chainName);
+  const predepositChainNickname = getPredepositChainNickname(chainName);
 
   const unitBalance = useBalance({
     address: accountAddress,
@@ -133,7 +134,7 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
     chainId: predepositChainId,
     functionName: "getPredeposit",
     args: [
-      PREDEPOSIT_CHAIN_NICKNAME,
+      predepositChainNickname,
       predepositSender,
       predepositRecipient,
     ] as const,
@@ -150,13 +151,14 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
     console.info("Predeposit read", {
       address: bridgeCoordinatorAddress,
       chainId: predepositChainId,
-      args: [PREDEPOSIT_CHAIN_NICKNAME, accountAddress, predepositRecipient],
+      args: [predepositChainNickname, accountAddress, predepositRecipient],
       enabled: predepositEnabled,
     });
   }, [
     accountAddress,
     bridgeCoordinatorAddress,
     predepositChainId,
+    predepositChainNickname,
     predepositEnabled,
     predepositRecipient,
   ]);
@@ -213,7 +215,6 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
     isPredepositLoading,
     predepositAmount,
     unitDecimals,
-    unitBalance.data?.symbol,
   ]);
 
   const zeroBigInt = BigInt(0);
@@ -312,7 +313,7 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <div className="flex h-6 min-w-6 items-center justify-center rounded-full bg-black text-[11px] font-semibold text-white shadow-sm">
+          <div className="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground shadow-sm">
             {positionsCount}
           </div>
           <span className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground [writing-mode:vertical-rl] [text-orientation:upright]">
