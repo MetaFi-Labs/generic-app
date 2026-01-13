@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUpDown } from "lucide-react";
+import Image from "next/image";
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { erc20Abi, erc4626Abi } from "viem";
 import {
@@ -29,6 +30,8 @@ import {
   getGenericUnitTokenAddress,
 } from "@/lib/constants/contracts";
 import {
+  getOpportunityHref,
+  OPPORTUNITY_APY_CAP,
   OPPORTUNITY_THEME,
   type OpportunityRoute,
 } from "@/lib/constants/opportunity-theme";
@@ -87,15 +90,26 @@ const TokenIcon = ({ src, alt }: { src: string; alt: string }) => (
   />
 );
 
+const ChainIcon = ({ src, alt }: { src: string; alt: string }) => (
+  <Image
+    src={src}
+    alt={alt}
+    width={32}
+    height={32}
+    sizes="32px"
+    className="h-[32px] w-[32px] object-cover"
+  />
+);
+
 type OpportunityOption = {
   value: OpportunityRoute;
   eyebrow: string;
   title: string;
   description: string;
-  apy: string;
   note: string;
   formDescription: string;
-  badge?: string;
+  iconSrc?: string;
+  iconAlt?: string;
 };
 
 const OPPORTUNITY_OPTIONS: OpportunityOption[] = [
@@ -104,29 +118,28 @@ const OPPORTUNITY_OPTIONS: OpportunityOption[] = [
     eyebrow: "Citrea GUSD",
     title: "Join the OGs with Citrea",
     description: "Citrea-native GUSD for DeFi power users",
-    apy: "—%",
     note: "L2-native settlement",
-    formDescription: "Deposit stablecoins to mint Citrea-native GUSD",
-    badge: "OG access",
+    formDescription: "Mint Citrea-native GUSD with stablecoins",
+    iconSrc: "/chains/citrea.png",
+    iconAlt: "Citrea",
   },
   {
     value: "predeposit",
     eyebrow: "Status L2 GUSD",
     title: "Predeposit for Status L2",
     description: "Lock funds for Status L2 launch with zero penalties",
-    apy: "—%",
     note: "Unlocks at launch",
     formDescription: "Lock stablecoins now to mint once Status L2 goes live",
-    badge: "FOMO shield",
+    iconSrc: "/chains/status.png",
+    iconAlt: "Status",
   },
   {
     value: "mainnet",
     eyebrow: "Mainnet GUSD",
     title: "Mainnet GUSD — safe, simple yield",
-    description: "Direct mainnet deposit with immediate mint access",
-    apy: "—%",
+    description: "Direct mainnet minting with immediate access",
     note: "Mainnet security",
-    formDescription: "Deposit stablecoins and mint GUSD on mainnet",
+    formDescription: "Mint GUSD on mainnet with stablecoins",
   },
 ];
 
@@ -167,9 +180,9 @@ const OpportunityCard = ({
         <span className="truncate text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
           {option.eyebrow}
         </span>
-        {option.badge ? (
-          <span className="shrink-0 whitespace-nowrap rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground transition group-hover:border-[hsl(var(--opportunity-color)/0.45)] group-hover:bg-[hsl(var(--opportunity-color)/0.2)] group-hover:text-[hsl(var(--opportunity-color))]">
-            {option.badge}
+        {option.iconSrc ? (
+          <span className="flex h-[32px] w-[32px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/60 bg-background/70 shadow-sm">
+            <ChainIcon src={option.iconSrc} alt={option.iconAlt ?? ""} />
           </span>
         ) : null}
       </div>
@@ -184,7 +197,7 @@ const OpportunityCard = ({
         </div>
         <div className="mt-auto flex items-center justify-between text-[11px] font-semibold text-foreground/70">
           <span className="whitespace-nowrap rounded-full border border-border/60 bg-background/70 px-2.5 py-0.5">
-            APY {option.apy}
+            Up to {OPPORTUNITY_APY_CAP[option.value]} APY
           </span>
           <span className="whitespace-nowrap text-muted-foreground">
             {option.note}
@@ -223,6 +236,7 @@ export function DepositSwap() {
     "idle",
   );
   const [txError, setTxError] = useState<string | null>(null);
+  const [postMintHref, setPostMintHref] = useState<string | null>(null);
 
   useEffect(() => {
     if (!stablecoins.find((coin) => coin.ticker === selectedTicker)) {
@@ -249,10 +263,12 @@ export function DepositSwap() {
     : "Redeem GUSD back into your selected stablecoin.";
 
   const handleSwitchDirection = () => {
+    setPostMintHref(null);
     setFlow(isDepositFlow ? "redeem" : "deposit");
   };
 
   const handleStablecoinChange = (value: StablecoinTicker) => {
+    setPostMintHref(null);
     setSelectedTicker(value);
   };
 
@@ -382,18 +398,10 @@ export function DepositSwap() {
     : needsRedeemApproval;
 
   const depositActionLabel =
-    depositRoute === "predeposit"
-      ? "Predeposit"
-      : depositRoute === "citrea"
-        ? "Citrea deposit"
-        : "Deposit";
+    depositRoute === "predeposit" ? "Predeposit" : "Mint";
 
   const depositButtonLabel =
-    depositRoute === "predeposit"
-      ? "Predeposit"
-      : depositRoute === "citrea"
-        ? "Deposit to Citrea"
-        : "Deposit";
+    depositRoute === "predeposit" ? "Predeposit" : "Mint";
 
   const buttonState = useMemo(() => {
     const actionLabel = isDepositFlow ? depositButtonLabel : "Redeem";
@@ -478,6 +486,9 @@ export function DepositSwap() {
     }
 
     setTxError(null);
+    setPostMintHref(null);
+
+    const routeAtSubmit = depositRoute;
 
     try {
       if (depositAllowance < parsedAmount) {
@@ -561,6 +572,11 @@ export function DepositSwap() {
       await publicClient.waitForTransactionReceipt({ hash: depositHash });
       notifyTxConfirmed(depositActionLabel, depositHash);
 
+      const opportunityHref = getOpportunityHref(routeAtSubmit);
+      if (opportunityHref) {
+        setPostMintHref(opportunityHref);
+      }
+
       setFromAmount("");
       const balanceRefetches: Promise<unknown>[] = [];
       if (stablecoinBalance.refetch) {
@@ -600,6 +616,7 @@ export function DepositSwap() {
     }
 
     setTxError(null);
+    setPostMintHref(null);
 
     try {
       const balanceBefore = await publicClient.readContract({
@@ -729,6 +746,17 @@ export function DepositSwap() {
     }
   };
 
+  const sourceChainLabel = "Ethereum";
+  const destinationChainLabel =
+    depositRoute === "citrea"
+      ? "Citrea"
+      : depositRoute === "predeposit"
+        ? "Status L2"
+        : sourceChainLabel;
+
+  const fromChainLabel = sourceChainLabel;
+  const toChainLabel = isDepositFlow ? destinationChainLabel : sourceChainLabel;
+
   const renderAssetSelector = (assetType: AssetType) => {
     if (assetType === "stablecoin") {
       return (
@@ -763,7 +791,7 @@ export function DepositSwap() {
     }
 
     return (
-      <div className="flex h-11 items-center gap-2 rounded-md border border-border bg-background/80 px-3 text-sm font-medium text-foreground">
+      <div className="flex h-11 items-center gap-2 rounded-xl border border-border/70 bg-background/80 px-3 text-sm font-medium text-foreground">
         <TokenIcon src={gusd.iconUrl} alt="GUSD icon" />
         <span>GUSD</span>
       </div>
@@ -777,8 +805,8 @@ export function DepositSwap() {
           <span className="text-xs font-semibold uppercase tracking-[0.4em] text-muted-foreground">
             Generic Money
           </span>
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-            Deploy USD with your own flavour
+          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+            One GUSD, many routes
           </h1>
           <p className="mx-auto max-w-2xl text-sm text-muted-foreground md:text-base">
             Choose the opportunity that matches your DeFi strategy
@@ -796,7 +824,9 @@ export function DepositSwap() {
                 selected={depositRoute === option.value}
                 name="deposit-route"
                 onSelect={() => {
+                  setPostMintHref(null);
                   setDepositRoute(option.value);
+
                   if (
                     typeof window !== "undefined" &&
                     window.matchMedia("(max-width: 767px)").matches
@@ -814,7 +844,13 @@ export function DepositSwap() {
           <div className="flex w-full max-w-md flex-col gap-6 rounded-3xl border border-border/60 bg-card/80 p-8 shadow-[0_35px_60px_-40px_rgba(15,23,42,0.45)] backdrop-blur">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
-                <span>{isDepositFlow ? "Deposit" : "Redeem"}</span>
+                <span>
+                  {isDepositFlow
+                    ? depositRoute === "predeposit"
+                      ? "Predeposit"
+                      : "Mint"
+                    : "Redeem"}
+                </span>
                 <span>{selectedOpportunity.eyebrow}</span>
               </div>
               <p className="text-xs text-muted-foreground">{formDescription}</p>
@@ -822,6 +858,7 @@ export function DepositSwap() {
             <div className="flex flex-col gap-4">
               <SwapAssetPanel
                 label="From"
+                chainLabel={fromChainLabel}
                 selector={renderAssetSelector(
                   isDepositFlow ? "stablecoin" : "gusd",
                 )}
@@ -831,7 +868,10 @@ export function DepositSwap() {
                     : "Amount in GUSD",
                   autoComplete: "off",
                   value: fromAmount,
-                  onChange: (event) => setFromAmount(event.target.value),
+                  onChange: (event) => {
+                    setPostMintHref(null);
+                    setFromAmount(event.target.value);
+                  },
                 }}
                 balance={{
                   text: fromBalanceText,
@@ -849,6 +889,7 @@ export function DepositSwap() {
               </button>
               <SwapAssetPanel
                 label="To"
+                chainLabel={toChainLabel}
                 selector={renderAssetSelector(
                   isDepositFlow ? "gusd" : "stablecoin",
                 )}
@@ -865,14 +906,23 @@ export function DepositSwap() {
                 }}
               />
             </div>
-            <button
-              type="button"
-              onClick={handlePrimaryAction}
-              disabled={buttonState.disabled}
-              className="h-11 rounded-xl bg-gradient-to-r from-primary via-primary/90 to-primary/95 text-sm font-semibold text-primary-foreground transition hover:from-primary/90 hover:via-primary/80 hover:to-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {buttonState.label}
-            </button>
+            {postMintHref && isDepositFlow && !txError && txStep === "idle" ? (
+              <a
+                href={postMintHref}
+                className="flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-primary via-primary/90 to-primary/95 text-sm font-semibold text-primary-foreground transition hover:from-primary/90 hover:via-primary/80 hover:to-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                View opportunity
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={handlePrimaryAction}
+                disabled={buttonState.disabled}
+                className="h-11 rounded-xl bg-gradient-to-r from-primary via-primary/90 to-primary/95 text-sm font-semibold text-primary-foreground transition hover:from-primary/90 hover:via-primary/80 hover:to-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {buttonState.label}
+              </button>
+            )}
             {txError ? (
               <p className="text-center text-xs text-destructive">{txError}</p>
             ) : null}

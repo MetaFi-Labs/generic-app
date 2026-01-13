@@ -28,6 +28,27 @@ export const OPPORTUNITY_THEME: Record<OpportunityRoute, OpportunityTheme> = {
   },
 };
 
+export const OPPORTUNITY_APY_CAP: Record<OpportunityRoute, string> = {
+  citrea: "—%",
+  predeposit: "—%",
+  mainnet: "5%",
+};
+
+export const getOpportunityHref = (route: OpportunityRoute) => {
+  const base = process.env.NEXT_PUBLIC_OPPORTUNITY_BASE_URL?.replace(
+    /\/+$/,
+    "",
+  );
+  const path =
+    route === "citrea" ? "/citrea" : route === "predeposit" ? "/status" : null;
+
+  if (!path) {
+    return null;
+  }
+
+  return base ? `${base}${path}` : path;
+};
+
 export const DEFAULT_OPPORTUNITY_ROUTE: OpportunityRoute = "predeposit";
 
 export const getOpportunityTheme = (route: OpportunityRoute) =>

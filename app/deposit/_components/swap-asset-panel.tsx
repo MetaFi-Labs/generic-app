@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 
 type SwapAssetPanelProps = {
   label: string;
+  chainLabel?: string;
   selector: ReactNode;
   inputProps?: InputHTMLAttributes<HTMLInputElement>;
   balance: {
@@ -15,14 +16,24 @@ type SwapAssetPanelProps = {
 
 export function SwapAssetPanel({
   label,
+  chainLabel,
   selector,
   inputProps,
   balance,
 }: SwapAssetPanelProps) {
   return (
     <div className="space-y-3 rounded-2xl border border-border/70 bg-background/80 p-5 shadow-sm">
-      <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-        <span>{label}</span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            {label}
+          </span>
+          {chainLabel ? (
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {chainLabel}
+            </span>
+          ) : null}
+        </div>
         {selector}
       </div>
       <input

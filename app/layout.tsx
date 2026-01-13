@@ -13,14 +13,34 @@ const gilroy = localFont({
   variable: "--font-gilroy",
   src: [
     {
+      path: "../public/fonts/Gilroy-Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Gilroy-RegularItalic.ttf",
+      weight: "400",
+      style: "italic",
+    },
+    {
       path: "../public/fonts/Gilroy-Medium.ttf",
-      weight: "400 500",
+      weight: "500",
       style: "normal",
     },
     {
       path: "../public/fonts/Gilroy-SemiBold.ttf",
       weight: "600",
       style: "normal",
+    },
+    {
+      path: "../public/fonts/Gilroy-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Gilroy-BoldItalic.woff",
+      weight: "700",
+      style: "italic",
     },
     {
       path: "../public/fonts/Gilroy-Black.ttf",

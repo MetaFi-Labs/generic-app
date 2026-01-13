@@ -2,6 +2,7 @@
 
 import { createAppKit } from "@reown/appkit/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 import * as React from "react";
 import { type Config, cookieToInitialState, WagmiProvider } from "wagmi";
 import {
@@ -21,10 +22,10 @@ const overrides: Record<string, string> = {
   "--apkt-fontFamily-regular": "var(--font-gilroy), system-ui, sans-serif",
   "--apkt-fontFamily-mono": "var(--font-geist-mono)",
   "--wui-font-family": "var(--font-gilroy), system-ui, sans-serif",
-  "--wui-colors-accent-100": "hsl(var(--primary))",
-  "--apkt-tokens-core-backgroundAccentPrimary-base": "hsl(var(--primary))",
-  "--apkt-tokens-core-backgroundAccentPrimary": "hsl(var(--primary))",
-  "--apkt-tokens-core-textAccentPrimary": "hsl(var(--primary-foreground))",
+  "--wui-colors-accent-100": "#0a0b0d",
+  "--apkt-tokens-core-backgroundAccentPrimary-base": "#0a0b0d",
+  "--apkt-tokens-core-backgroundAccentPrimary": "#0a0b0d",
+  "--apkt-tokens-core-textAccentPrimary": "#ffffff",
 };
 
 if (!projectId) {
@@ -53,6 +54,14 @@ const init = () => {
       analytics: true,
     },
     themeMode: "light",
+    themeVariables: {
+      "--w3m-accent": "#0a0b0d",
+      "--apkt-accent": "#0a0b0d",
+      "--w3m-font-family": "var(--font-gilroy), system-ui, sans-serif",
+      "--apkt-font-family": "var(--font-gilroy), system-ui, sans-serif",
+      "--w3m-border-radius-master": "16px",
+      "--apkt-border-radius-master": "16px",
+    },
   });
 
   const root = document.documentElement;
@@ -84,6 +93,33 @@ const OpportunityRouteContext = React.createContext<
   OpportunityRouteContextValue | undefined
 >(undefined);
 
+const getOpportunityRouteFromUrl = (
+  pathname: string | null | undefined,
+  hash: string | null | undefined,
+): OpportunityRoute | null => {
+  const normalizedHash = (hash ?? "").replace(/^#/, "").trim().toLowerCase();
+
+  const normalizedPath = (pathname ?? "")
+    .split("?")[0]
+    .split("#")[0]
+    .split("/")
+    .filter(Boolean)[0]
+    ?.trim()
+    .toLowerCase();
+
+  const slug = normalizedHash || normalizedPath;
+
+  if (slug === "citrea") {
+    return "citrea";
+  }
+
+  if (slug === "status" || slug === "predeposit") {
+    return "predeposit";
+  }
+
+  return null;
+};
+
 export const useOpportunityRoute = () => {
   const value = React.useContext(OpportunityRouteContext);
   if (!value) {
@@ -110,25 +146,89 @@ export default function ContextProvider({
     init();
   }, []);
 
-  const [route, setRoute] = React.useState<OpportunityRoute>(
-    DEFAULT_OPPORTUNITY_ROUTE,
-  );
-  const [flow, setFlow] = React.useState<SwapFlow>("deposit");
+  const pathname = usePathname();
+
+  const [route, setRoute] = React.useState<OpportunityRoute>(() => {
+    if (typeof window === "undefined") {
+      return DEFAULT_OPPORTUNITY_ROUTE;
+    }
+
+    const fromUrl = getOpportunityRouteFromUrl(
+      window.location.pathname,
+      window.location.hash,
+    );
+    if (fromUrl) {
+      return fromUrl;
+    }
+
+    const stored = window.localStorage.getItem(OPPORTUNITY_STORAGE_KEY);
+    if (stored === "citrea" || stored === "predeposit") {
+      return stored;
+    }
+
+    return DEFAULT_OPPORTUNITY_ROUTE;
+  });
+
+  const [flow, setFlow] = React.useState<SwapFlow>(() => {
+    if (typeof window === "undefined") {
+      return "deposit";
+    }
+
+    const fromUrl = getOpportunityRouteFromUrl(
+      window.location.pathname,
+      window.location.hash,
+    );
+
+    if (fromUrl) {
+      return "deposit";
+    }
+
+    const storedFlow = window.localStorage.getItem(SWAP_FLOW_STORAGE_KEY);
+    if (storedFlow === "deposit" || storedFlow === "redeem") {
+      return storedFlow;
+    }
+
+    return "deposit";
+  });
 
   React.useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    const stored = window.localStorage.getItem(OPPORTUNITY_STORAGE_KEY);
-    if (stored === "citrea" || stored === "predeposit") {
-      setRoute(stored);
+    const routeFromUrl = getOpportunityRouteFromUrl(
+      pathname,
+      window.location.hash,
+    );
+    if (!routeFromUrl) {
+      return;
     }
 
-    const storedFlow = window.localStorage.getItem(SWAP_FLOW_STORAGE_KEY);
-    if (storedFlow === "deposit" || storedFlow === "redeem") {
-      setFlow(storedFlow);
+    setRoute(routeFromUrl);
+    setFlow("deposit");
+  }, [pathname]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
     }
+
+    const handleHashChange = () => {
+      const routeFromHash = getOpportunityRouteFromUrl(
+        window.location.pathname,
+        window.location.hash,
+      );
+
+      if (!routeFromHash) {
+        return;
+      }
+
+      setRoute(routeFromHash);
+      setFlow("deposit");
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
   React.useEffect(() => {

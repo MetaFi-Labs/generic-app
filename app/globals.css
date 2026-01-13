@@ -67,11 +67,11 @@
   --primary: var(--blue-100);
   --primary-foreground: 221 100% 96%;
 
-  --w3m-accent: hsl(var(--primary));
+  --w3m-accent: #0a0b0d;
   --w3m-background: hsl(var(--background));
   --w3m-font-family: var(--font-sans);
   --w3m-border-radius-master: 16px;
-  --apkt-accent: hsl(var(--primary));
+  --apkt-accent: #0a0b0d;
   --apkt-background: hsl(var(--background));
   --apkt-font-family: var(--font-sans);
   --apkt-border-radius-master: 16px;
@@ -112,11 +112,11 @@
   --primary: var(--blue-100);
   --primary-foreground: var(--blue-15);
 
-  --w3m-accent: hsl(var(--primary));
+  --w3m-accent: #0a0b0d;
   --w3m-background: hsl(var(--background));
   --w3m-font-family: var(--font-sans);
   --w3m-border-radius-master: 16px;
-  --apkt-accent: hsl(var(--primary));
+  --apkt-accent: #0a0b0d;
   --apkt-background: hsl(var(--background));
   --apkt-font-family: var(--font-sans);
   --apkt-border-radius-master: 16px;
@@ -191,6 +191,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans), system-ui, sans-serif;

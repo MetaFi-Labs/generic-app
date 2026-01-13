@@ -297,7 +297,7 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
                   </div>
                 </div>
                 <span className="rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-                  Deposit
+                  Mint
                 </span>
               </button>
             </div>
@@ -334,7 +334,7 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
                           onClick={() => handleSelectOpportunity("mainnet")}
                           className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-[11px] font-semibold text-foreground/80 transition hover:border-primary/30 hover:bg-background hover:text-foreground"
                         >
-                          Add
+                          Mint
                         </button>
                         <button
                           type="button"
@@ -378,7 +378,7 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
                         onClick={() => handleSelectOpportunity("predeposit")}
                         className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-[11px] font-semibold text-foreground/80 transition hover:border-primary/30 hover:bg-background hover:text-foreground"
                       >
-                        Add
+                        Predeposit
                       </button>
                     </div>
                   </div>
