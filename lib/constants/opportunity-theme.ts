@@ -28,7 +28,7 @@ export const OPPORTUNITY_THEME: Record<OpportunityRoute, OpportunityTheme> = {
   },
 };
 
-export const DEFAULT_OPPORTUNITY_ROUTE: OpportunityRoute = "mainnet";
+export const DEFAULT_OPPORTUNITY_ROUTE: OpportunityRoute = "predeposit";
 
 export const getOpportunityTheme = (route: OpportunityRoute) =>
   OPPORTUNITY_THEME[route];

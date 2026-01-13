@@ -55,7 +55,7 @@ export default function HomePage() {
               deploy capital.
             </p>
           </header>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div
               className="group relative min-h-[240px] overflow-hidden rounded-2xl border border-border/60 bg-background/95 p-6 shadow-[0_20px_40px_-35px_rgba(15,23,42,0.35)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_25px_55px_-35px_rgba(15,23,42,0.45)] motion-reduce:transform-none motion-reduce:transition-none animate-in fade-in-0 slide-in-from-bottom-4 duration-700"
               style={{ animationDelay: "40ms" }}
@@ -185,7 +185,7 @@ export default function HomePage() {
               </div>
             </div>
             <div
-              className="group relative min-h-[240px] overflow-hidden rounded-2xl border border-border/60 bg-background/95 p-6 shadow-[0_20px_40px_-35px_rgba(15,23,42,0.35)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_25px_55px_-35px_rgba(15,23,42,0.45)] motion-reduce:transform-none motion-reduce:transition-none animate-in fade-in-0 slide-in-from-bottom-4 duration-700"
+              className="hidden group relative min-h-[240px] overflow-hidden rounded-2xl border border-border/60 bg-background/95 p-6 shadow-[0_20px_40px_-35px_rgba(15,23,42,0.35)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_25px_55px_-35px_rgba(15,23,42,0.45)] motion-reduce:transform-none motion-reduce:transition-none animate-in fade-in-0 slide-in-from-bottom-4 duration-700"
               style={{ animationDelay: "200ms" }}
             >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(130%_120%_at_100%_100%,hsl(var(--primary)/0.12)_0%,transparent_60%)] opacity-90" />

@@ -121,11 +121,7 @@ export default function ContextProvider({
     }
 
     const stored = window.localStorage.getItem(OPPORTUNITY_STORAGE_KEY);
-    if (
-      stored === "citrea" ||
-      stored === "predeposit" ||
-      stored === "mainnet"
-    ) {
+    if (stored === "citrea" || stored === "predeposit") {
       setRoute(stored);
     }
 

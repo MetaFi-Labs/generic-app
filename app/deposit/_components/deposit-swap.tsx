@@ -786,8 +786,10 @@ export function DepositSwap() {
         </div>
         <fieldset className="mt-2 space-y-4 md:mt-20">
           <legend className="sr-only">Opportunity selection</legend>
-          <div className="grid justify-items-center gap-3 lg:grid-cols-3">
-            {OPPORTUNITY_OPTIONS.map((option) => (
+          <div className="grid justify-items-center gap-3 md:grid-cols-2">
+            {OPPORTUNITY_OPTIONS.filter(
+              (option) => option.value !== "mainnet",
+            ).map((option) => (
               <OpportunityCard
                 key={option.value}
                 option={option}
