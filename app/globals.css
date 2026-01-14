@@ -200,4 +200,11 @@
     font-family: var(--font-sans), system-ui, sans-serif;
     font-weight: 400;
   }
+
+  appkit-button {
+    --apkt-tokens-core-backgroundAccentPrimary: #0a0b0d;
+    --apkt-tokens-core-backgroundAccentPrimary-base: #0a0b0d;
+    --apkt-tokens-core-textAccentPrimary: #ffffff;
+    --apkt-tokens-core-borderAccentPrimary: #0a0b0d;
+  }
 }

@@ -107,7 +107,9 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
   const { decimals: gusdDecimals } = useErc20Decimals(gusdAddress);
   const predepositChainId = CHAIN_ID_BY_NAME[chainName];
   const bridgeCoordinatorAddress = getBridgeCoordinatorAddress(chainName);
-  const predepositChainNickname = getPredepositChainNickname(chainName);
+  const statusPredepositChainNickname =
+    getPredepositChainNickname("predeposit");
+  const citreaPredepositChainNickname = getPredepositChainNickname("citrea");
 
   const unitBalance = useBalance({
     address: accountAddress,
@@ -127,22 +129,42 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
     },
   });
 
-  const predepositEnabled = Boolean(accountAddress);
+  const predepositEnabled = Boolean(accountAddress && bridgeCoordinatorAddress);
   const predepositSender = accountAddress ?? ZERO_ADDRESS;
   const predepositRecipient = accountAddress
     ? toBytes32(accountAddress)
     : toBytes32(ZERO_ADDRESS);
+
   const {
-    data: predepositAmount,
-    isLoading: isPredepositLoading,
-    isError: isPredepositError,
+    data: statusPredepositAmount,
+    isLoading: isStatusPredepositLoading,
+    isError: isStatusPredepositError,
   } = useReadContract({
     address: bridgeCoordinatorAddress,
     abi: bridgeCoordinatorAbi,
     chainId: predepositChainId,
     functionName: "getPredeposit",
     args: [
-      predepositChainNickname,
+      statusPredepositChainNickname,
+      predepositSender,
+      predepositRecipient,
+    ] as const,
+    query: {
+      enabled: predepositEnabled,
+    },
+  });
+
+  const {
+    data: citreaPredepositAmount,
+    isLoading: isCitreaPredepositLoading,
+    isError: isCitreaPredepositError,
+  } = useReadContract({
+    address: bridgeCoordinatorAddress,
+    abi: bridgeCoordinatorAbi,
+    chainId: predepositChainId,
+    functionName: "getPredeposit",
+    args: [
+      citreaPredepositChainNickname,
       predepositSender,
       predepositRecipient,
     ] as const,
@@ -177,56 +199,111 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
     return formatUsdFromToken(gusdBalance.data.value, gusdDecimals ?? null);
   }, [accountAddress, gusdBalance, gusdDecimals]);
 
-  const predepositTokenValue = useMemo(() => {
+  const statusPredepositTokenValue = useMemo(() => {
     if (!accountAddress) {
       return "—";
     }
 
-    if (isPredepositLoading) {
+    if (isStatusPredepositLoading) {
       return "Loading…";
     }
 
-    if (isPredepositError || predepositAmount == null || gusdDecimals == null) {
+    if (
+      isStatusPredepositError ||
+      statusPredepositAmount == null ||
+      gusdDecimals == null
+    ) {
       return "Unavailable";
     }
 
-    return `${formatTokenAmount(formatUnits(predepositAmount, gusdDecimals), POSITION_PRECISION)} GUSD`.trim();
+    return `${formatTokenAmount(formatUnits(statusPredepositAmount, gusdDecimals), POSITION_PRECISION)} GUSD`.trim();
   }, [
     accountAddress,
     gusdDecimals,
-    isPredepositError,
-    isPredepositLoading,
-    predepositAmount,
+    isStatusPredepositError,
+    isStatusPredepositLoading,
+    statusPredepositAmount,
   ]);
 
-  const predepositUsdValue = useMemo(() => {
+  const statusPredepositUsdValue = useMemo(() => {
     if (!accountAddress) {
       return "—";
     }
 
-    if (isPredepositLoading) {
+    if (isStatusPredepositLoading) {
       return "Loading…";
     }
 
-    if (isPredepositError || predepositAmount == null) {
+    if (isStatusPredepositError || statusPredepositAmount == null) {
       return "Unavailable";
     }
 
-    return formatUsdFromToken(predepositAmount, gusdDecimals ?? null);
+    return formatUsdFromToken(statusPredepositAmount, gusdDecimals ?? null);
   }, [
     accountAddress,
     gusdDecimals,
-    isPredepositError,
-    isPredepositLoading,
-    predepositAmount,
+    isStatusPredepositError,
+    isStatusPredepositLoading,
+    statusPredepositAmount,
+  ]);
+
+  const citreaPredepositTokenValue = useMemo(() => {
+    if (!accountAddress) {
+      return "—";
+    }
+
+    if (isCitreaPredepositLoading) {
+      return "Loading…";
+    }
+
+    if (
+      isCitreaPredepositError ||
+      citreaPredepositAmount == null ||
+      gusdDecimals == null
+    ) {
+      return "Unavailable";
+    }
+
+    return `${formatTokenAmount(formatUnits(citreaPredepositAmount, gusdDecimals), POSITION_PRECISION)} GUSD`.trim();
+  }, [
+    accountAddress,
+    citreaPredepositAmount,
+    gusdDecimals,
+    isCitreaPredepositError,
+    isCitreaPredepositLoading,
+  ]);
+
+  const citreaPredepositUsdValue = useMemo(() => {
+    if (!accountAddress) {
+      return "—";
+    }
+
+    if (isCitreaPredepositLoading) {
+      return "Loading…";
+    }
+
+    if (isCitreaPredepositError || citreaPredepositAmount == null) {
+      return "Unavailable";
+    }
+
+    return formatUsdFromToken(citreaPredepositAmount, gusdDecimals ?? null);
+  }, [
+    accountAddress,
+    citreaPredepositAmount,
+    gusdDecimals,
+    isCitreaPredepositError,
+    isCitreaPredepositLoading,
   ]);
 
   const zeroBigInt = BigInt(0);
   const hasUnits = (unitBalance.data?.value ?? zeroBigInt) > zeroBigInt;
   const hasGusd = (gusdBalance.data?.value ?? zeroBigInt) > zeroBigInt;
-  const hasPredeposit = (predepositAmount ?? zeroBigInt) > zeroBigInt;
+  const hasStatusPredeposit =
+    (statusPredepositAmount ?? zeroBigInt) > zeroBigInt;
+  const hasCitreaPredeposit =
+    (citreaPredepositAmount ?? zeroBigInt) > zeroBigInt;
   const positionsCount = accountAddress
-    ? [hasGusd, hasPredeposit].filter(Boolean).length
+    ? [hasGusd, hasStatusPredeposit, hasCitreaPredeposit].filter(Boolean).length
     : 0;
   const showEmptyState = positionsCount === 0;
 
@@ -292,7 +369,15 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
                       Citrea GUSD
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      Balance unavailable
+                      {!accountAddress
+                        ? "Connect wallet to view"
+                        : isCitreaPredepositLoading
+                          ? "Loading…"
+                          : isCitreaPredepositError
+                            ? "Unavailable"
+                            : hasCitreaPredeposit
+                              ? `${citreaPredepositUsdValue} locked`
+                              : "No position yet"}
                     </p>
                   </div>
                 </div>
@@ -349,7 +434,7 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
                 </div>
               ) : null}
 
-              {hasPredeposit ? (
+              {hasStatusPredeposit ? (
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm transition hover:shadow-md">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
@@ -360,10 +445,10 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
                         </p>
                       </div>
                       <p className="mt-2 text-xl font-semibold text-foreground">
-                        {predepositUsdValue}
+                        {statusPredepositUsdValue}
                       </p>
                       <p className="mt-1 text-[11px] text-muted-foreground">
-                        {predepositTokenValue}
+                        {statusPredepositTokenValue}
                       </p>
                       <p className="mt-2 text-[11px] text-muted-foreground">
                         Unlocks when Status L2 goes live · No penalties
@@ -379,6 +464,42 @@ export function DepositSidebar({ className }: DepositSidebarProps = {}) {
                         className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-[11px] font-semibold text-foreground/80 transition hover:border-primary/30 hover:bg-background hover:text-foreground"
                       >
                         Predeposit
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {hasCitreaPredeposit ? (
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm transition hover:shadow-md">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 text-primary/80">
+                        <Sparkles className="h-4 w-4" />
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em]">
+                          Citrea predeposit
+                        </p>
+                      </div>
+                      <p className="mt-2 text-xl font-semibold text-foreground">
+                        {citreaPredepositUsdValue}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {citreaPredepositTokenValue}
+                      </p>
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        Unlocks at launch · No penalties
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <span className="rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                        Locked
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectOpportunity("citrea")}
+                        className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-[11px] font-semibold text-foreground/80 transition hover:border-primary/30 hover:bg-background hover:text-foreground"
+                      >
+                        Mint
                       </button>
                     </div>
                   </div>

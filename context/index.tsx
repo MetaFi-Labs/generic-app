@@ -59,8 +59,6 @@ const init = () => {
       "--apkt-accent": "#0a0b0d",
       "--w3m-font-family": "var(--font-gilroy), system-ui, sans-serif",
       "--apkt-font-family": "var(--font-gilroy), system-ui, sans-serif",
-      "--w3m-border-radius-master": "16px",
-      "--apkt-border-radius-master": "16px",
     },
   });
 

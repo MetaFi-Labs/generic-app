@@ -282,11 +282,16 @@ export function DepositSwap() {
   const { decimals: stablecoinDecimals } = useErc20Decimals(stablecoinAddress);
   const { decimals: gusdDecimals } = useErc20Decimals(gusdAddress);
 
-  const isPredepositDeposit = isDepositFlow && depositRoute === "predeposit";
+  const isPredepositDeposit =
+    isDepositFlow &&
+    (depositRoute === "predeposit" || depositRoute === "citrea");
 
   const depositorAddress = getGenericDepositorAddress(chainName);
   const genericUnitTokenAddress = getGenericUnitTokenAddress(chainName);
-  const predepositChainNickname = getPredepositChainNickname(chainName);
+  const predepositChainNickname =
+    depositRoute === "mainnet"
+      ? undefined
+      : getPredepositChainNickname(depositRoute);
 
   const stablecoinBalance = useBalance({
     address: accountAddress,
@@ -521,7 +526,7 @@ export function DepositSwap() {
       setTxStep("submitting");
       let depositHash: HexBytes;
       if (isPredepositDeposit) {
-        if (!stablecoinAddress) {
+        if (!stablecoinAddress || !predepositChainNickname) {
           return;
         }
         const remoteRecipient = toBytes32(accountAddress);
