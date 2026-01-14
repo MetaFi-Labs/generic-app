@@ -7,6 +7,8 @@ import { Footer } from "@/components/navigation/footer";
 import { Navbar } from "@/components/navigation/navbar";
 import { Toaster } from "@/components/ui/sonner";
 import ContextProvider from "@/context";
+import { Analytics } from "@vercel/analytics/next"
+
 import "./globals.css";
 
 const gilroy = localFont({
